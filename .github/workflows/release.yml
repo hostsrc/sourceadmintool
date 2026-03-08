@@ -124,6 +124,20 @@ jobs:
           gh release delete dev --yes 2>/dev/null || true
           git push origin :refs/tags/dev 2>/dev/null || true
 
+      - name: Generate release notes
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          SHA_SHORT="${{ steps.version.outputs.sha_short }}"
+          {
+            echo "**Dev build** from \`${SHA_SHORT}\` — version ${VERSION} — $(date -u +%Y-%m-%d)"
+            echo ""
+            echo "### Recent changes"
+            git log --pretty=format:'- %s (`%h`)' --no-merges -15
+            echo ""
+            echo ""
+            echo "> Automated pre-release. May be unstable."
+          } > release_notes.md
+
       - name: Create dev release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -132,19 +146,9 @@ jobs:
           SHA_SHORT="${{ steps.version.outputs.sha_short }}"
           FILES=$(find artifacts -type f -name 'SAT-*.*')
 
-          NOTES=$(cat <<'NOTESEOF'
-          **Dev build** from `NOTESEOF
-          )
-          NOTES="**Dev build** from \`${SHA_SHORT}\` — version ${VERSION} — $(date -u +%Y-%m-%d)
-
-          ### Recent changes
-          $(git log --pretty=format:'- %s (`%h`)' --no-merges -15)
-
-          > Automated pre-release. May be unstable."
-
           gh release create dev \
             --title "Dev Build v${VERSION} (${SHA_SHORT})" \
-            --notes "$NOTES" \
+            --notes-file release_notes.md \
             --prerelease \
             --target "$GITHUB_SHA" \
             $FILES
