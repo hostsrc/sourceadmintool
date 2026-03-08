@@ -39,7 +39,7 @@ jobs:
 
       - name: Install dependencies (Windows)
         if: startsWith(runner.os, 'Windows')
-        run: vcpkg install miniupnpc libmaxminddb --triplet x64-windows
+        run: vcpkg install miniupnpc libmaxminddb --triplet x64-windows-static-md
 
       - name: Configure MSVC
         if: startsWith(runner.os, 'Windows')
@@ -59,7 +59,7 @@ jobs:
 
       - name: Configure (Windows)
         if: startsWith(runner.os, 'Windows')
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
 
       - name: Build
         run: cmake --build build --config Release -j4
