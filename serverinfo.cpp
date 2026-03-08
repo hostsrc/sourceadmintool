@@ -103,8 +103,7 @@ void ServerInfo::GetCountryFlag()
 
 void HostQueryResult::HostInfoResolved(QHostInfo hostInfo)
 {
-    QHostAddress addr;
-    foreach(addr, hostInfo.addresses())
+    for(const QHostAddress &addr : hostInfo.addresses())
     {
         if(!addr.isNull() && addr.protocol() == QAbstractSocket::IPv4Protocol)
         {

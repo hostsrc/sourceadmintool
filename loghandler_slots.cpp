@@ -168,7 +168,7 @@ void MainWindow::sendChat()
     ServerTableIndexItem *item = this->GetServerTableIndexItem(this->ui->browserTable->currentRow());
     ServerInfo *info = item->GetServerInfo();
 
-    if(info && (info->rcon == NULL || !info->rcon->isAuthed))
+    if(info && (info->rcon == nullptr || !info->rcon->isAuthed))
     {
         QMessageBox message(this);
         message.setText("Please authenticate first.");

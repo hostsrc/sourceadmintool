@@ -7,7 +7,6 @@
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QPalette>
-#include <QSignalMapper>
 #include <QDesktopServices>
 #include <QWidgetAction>
 #include <QTextEdit>
@@ -91,11 +90,7 @@ void MainWindow::customPlayerContextMenu(const QPoint &pos)
 
         QMenu *pContextMenu = new QMenu(this);
 
-        QSignalMapper* signalMapper = new QSignalMapper(pContextMenu);
-
-        ContextMenuItem ctxItem;
-
-        foreach(ctxItem, contextMenuItems)
+        for(const ContextMenuItem &ctxItem : contextMenuItems)
         {
             if((ctxItem.type == ContextTypeSteamID && steamid.isEmpty()) || (ctxItem.type == ContextTypeName && name.isEmpty()))
                 continue;
@@ -108,22 +103,16 @@ void MainWindow::customPlayerContextMenu(const QPoint &pos)
                 if(!ctxItem.defaultSub.isNull())
                 {
                     QAction *pAction = new QAction("Default", submenu);
-
-                    pAction->connect(pAction, &QAction::triggered, signalMapper, static_cast<void(QSignalMapper::*)()>(&QSignalMapper::map));
-                    signalMapper->setMapping(pAction, CreateCommand(ctxItem.defaultSub, "", ctxItem.type, name, steamid));
-
+                    QString cmd = CreateCommand(ctxItem.defaultSub, "", ctxItem.type, name, steamid);
+                    connect(pAction, &QAction::triggered, this, [this, cmd]{ playerContextMenuAction(cmd); });
                     submenu->addAction(pAction);
                 }
 
-                CtxSubItem ctxSubItem;
-
-                foreach(ctxSubItem, ctxItem.subItems)
+                for(const CtxSubItem &ctxSubItem : ctxItem.subItems)
                 {
                     QAction *pAction = new QAction(ctxSubItem.display, submenu);
-
-                    pAction->connect(pAction, &QAction::triggered, signalMapper, static_cast<void(QSignalMapper::*)()>(&QSignalMapper::map));
-                    signalMapper->setMapping(pAction, CreateCommand(ctxItem.cmd, ctxSubItem.val, ctxItem.type, name, steamid));
-
+                    QString cmd = CreateCommand(ctxItem.cmd, ctxSubItem.val, ctxItem.type, name, steamid);
+                    connect(pAction, &QAction::triggered, this, [this, cmd]{ playerContextMenuAction(cmd); });
                     submenu->addAction(pAction);
                 }
                 pContextMenu->addMenu(submenu);
@@ -131,15 +120,12 @@ void MainWindow::customPlayerContextMenu(const QPoint &pos)
             else
             {
                 QAction *pAction = new QAction(ctxItem.display, pContextMenu);
-
-                pAction->connect(pAction, &QAction::triggered, signalMapper, static_cast<void(QSignalMapper::*)()>(&QSignalMapper::map));
-                signalMapper->setMapping(pAction, CreateCommand(ctxItem.cmd, "", ctxItem.type, name, steamid));
-
+                QString cmd = CreateCommand(ctxItem.cmd, "", ctxItem.type, name, steamid);
+                connect(pAction, &QAction::triggered, this, [this, cmd]{ playerContextMenuAction(cmd); });
                 pContextMenu->addAction(pAction);
             }
         }
 
-        signalMapper->connect(signalMapper, static_cast<void(QSignalMapper::*)(const QString &)>(&QSignalMapper::mapped), this, &MainWindow::playerContextMenuAction);
         pContextMenu->connect(pContextMenu, &QMenu::aboutToHide, this, &MainWindow::hideContextMenu);
         pContextMenu->exec(globalpos);
     }
@@ -161,7 +147,7 @@ void MainWindow::playerContextMenuAction(const QString &cmd)
     ServerTableIndexItem *item = this->GetServerTableIndexItem(this->ui->browserTable->currentRow());
     ServerInfo *info = item->GetServerInfo();
 
-    if(info && (info->rcon == NULL || !info->rcon->isAuthed))
+    if(info && (info->rcon == nullptr || !info->rcon->isAuthed))
     {
         QList<QueuedCommand>cmds;
         cmds.append(QueuedCommand(cmd, QueuedCommandType::ContextCommand));
@@ -358,7 +344,7 @@ void MainWindow::batchAddServerEntry()
         QString text = textEdit->toPlainText().trimmed();
         if(text.isEmpty()) return;
 
-        QStringList lines = text.split('\n', QString::SkipEmptyParts);
+        QStringList lines = text.split('\n', Qt::SkipEmptyParts);
         int added = 0, skipped = 0;
 
         for(int i = 0; i < lines.size(); i++)
@@ -548,9 +534,9 @@ void MainWindow::darkThemeTriggered()
         {
             this->ui->browserTable->item(i, kBrowserColLockIcon)->setData(Qt::DecorationRole, this->GetLockImage());
         }
-        if(hostname && (hostname->textColor() == Qt::white || hostname->textColor() == Qt::black))
+        if(hostname && (hostname->foreground().color() == Qt::white || hostname->foreground().color() == Qt::black))
         {
-            hostname->setTextColor(color);
+            hostname->setForeground(color);
         }
     }
 }

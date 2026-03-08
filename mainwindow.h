@@ -111,7 +111,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow(QWidget *parent = nullptr);
     AddServerError CheckServerList(QString server);
     ServerInfo *AddServerToList(QString server, AddServerError *error = nullptr);
     void UpdateSelectedItemInfo(bool removeFirst = true, bool updateRules = false);
@@ -169,7 +169,7 @@ private:
     Ui::MainWindow *ui;
     QTimer *updateTimer;
     void ConnectSlots();
-    void UpdateInfoTable(ServerInfo *info, bool current = true, QList<RulesInfo> *list = NULL);
+    void UpdateInfoTable(ServerInfo *info, bool current = true, QList<RulesInfo> *list = nullptr);
     void HookEvents();
     void SetRconSignals(bool block);
     void RestoreRcon(ServerInfo *info);

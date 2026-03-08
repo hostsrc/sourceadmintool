@@ -57,7 +57,7 @@ class ServerInfo
 public:
     ~ServerInfo()
     {
-        if(this->rcon != NULL)
+        if(this->rcon != nullptr)
             delete this->rcon;
     }
 

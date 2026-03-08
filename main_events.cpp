@@ -121,12 +121,11 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
 
             QClipboard *clipboard = QApplication::clipboard();
 
-            QTableWidgetItem *item;
             QString copy;
 
             int row = -1;
 
-            foreach(item, selectedItems)
+            for(QTableWidgetItem *item : selectedItems)
             {
                 if(row == -1)
                 {

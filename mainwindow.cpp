@@ -7,6 +7,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QStatusBar>
+#include <QRegularExpression>
 
 extern Settings *settings;
 extern QList<ServerInfo *> serverList;
@@ -15,8 +16,8 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
-    pPlayerQuery = NULL;
-    pRulesQuery = NULL;
+    pPlayerQuery = nullptr;
+    pRulesQuery = nullptr;
     ui->setupUi(this);
     setWindowTitle("Source Admin Tool");
     commandIter = new QMutableListIterator<QString>(this->commandHistory);
@@ -180,7 +181,7 @@ ServerInfo *MainWindow::AddServerToList(QString server, AddServerError *pError)
     {
         //Resolve Address
         HostQueryResult *res = new HostQueryResult(info, this, id);
-        QHostInfo::lookupHost(info->hostname, res, SLOT(HostInfoResolved(QHostInfo)));
+        QHostInfo::lookupHost(info->hostname, res, &HostQueryResult::HostInfoResolved);
     }
     return info;
 }
@@ -266,7 +267,7 @@ void MainWindow::ApplyBrowserFilter()
             if(!matches && !info->serverNameRich.isEmpty())
             {
                 QString plainName = info->serverNameRich;
-                plainName.remove(QRegExp("<[^>]*>"));
+                plainName.remove(QRegularExpression("<[^>]*>"));
                 if(plainName.contains(filterText, Qt::CaseInsensitive))
                     matches = true;
             }
@@ -367,12 +368,12 @@ void MainWindow::UpdateGroupColumn(int row, ServerInfo *info)
         item->setBackground(groupColor);
         // Use dark text on light backgrounds, light text on dark backgrounds
         int brightness = (groupColor.red() * 299 + groupColor.green() * 587 + groupColor.blue() * 114) / 1000;
-        item->setTextColor(brightness > 128 ? Qt::black : Qt::white);
+        item->setForeground(brightness > 128 ? Qt::black : Qt::white);
     }
     else
     {
         item->setBackground(QBrush());
-        item->setTextColor(this->GetTextColor());
+        item->setForeground(this->GetTextColor());
     }
 }
 

@@ -118,7 +118,7 @@ void GraphWidget::paintEvent(QPaintEvent *)
 
 void GraphWidget::mouseMoveEvent(QMouseEvent *event)
 {
-    int x = event->pos().x();
+    int x = event->position().toPoint().x();
     int idx = getVisibleStartIndex();
     int dataIndex = idx + x;
 
@@ -127,7 +127,7 @@ void GraphWidget::mouseMoveEvent(QMouseEvent *event)
         const TimestampedValue &tv = dataList->at(dataIndex);
         QString timeStr = QDateTime::fromMSecsSinceEpoch(tv.timestamp).toString("hh:mm:ss");
         QString label = (graphType == PingGraph) ? "Ping" : "Players";
-        QToolTip::showText(event->globalPos(),
+        QToolTip::showText(event->globalPosition().toPoint(),
             QString("%1: %2\nTime: %3").arg(label, QString::number(tv.value), timeStr));
         update(); // repaint to update crosshair
     }

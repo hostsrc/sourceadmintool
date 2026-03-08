@@ -7,7 +7,9 @@
 #include <QImage>
 #include <QMap>
 #include <QTime>
+#include <QFile>
 #include <QXmlStreamReader>
+#include <QRandomGenerator>
 
 QMap<int, QString> appIDMap;
 Settings *settings;
@@ -110,8 +112,7 @@ void Settings::SetDefaultSettings()
     for(int i = 0; i < intList.size(); i++)
         pMain->GetUi()->playerTable->setColumnWidth(i, intList.at(i));
 
-    qsrand((uint)(QTime::currentTime()).msec());
-    pMain->u16logPort = qrand() % ((PORT_MAX + 1) - PORT_MIN) + PORT_MIN;
+    pMain->u16logPort = QRandomGenerator::global()->bounded(PORT_MIN, PORT_MAX + 1);
 
     pMain->showLoggingInfo = true;
 

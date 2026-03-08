@@ -111,9 +111,9 @@ void MainWindow::CreateTableItemOrUpdate(size_t row, size_t col, QTableWidget *t
             playerItem->players = info->currentPlayers;
 
             if(info->currentPlayers == info->maxPlayers)
-                playerItem->setTextColor(errorColor);
+                playerItem->setForeground(errorColor);
             else
-                playerItem->setTextColor(queryingColor);
+                playerItem->setForeground(queryingColor);
 
             playerItem->setText(info->playerCount);
 
@@ -173,22 +173,22 @@ void MainWindow::CreateTableItemOrUpdate(size_t row, size_t col, QTableWidget *t
                 }
                 else if(info->queryState == QueryFailed)
                 {
-                    item->setTextColor(errorColor);
+                    item->setForeground(errorColor);
                     item->setText(QString("Failed to query %1, retrying in %2 seconds").arg(info->hostPort, QString::number(UPDATE_TIME)));
                 }
                 else if(info->queryState == QueryRunning)
                 {
-                    item->setTextColor(queryingColor);
+                    item->setForeground(queryingColor);
                     item->setText(QString("Querying server %1...").arg(info->hostPort));
                 }
                 else if(info->queryState == QueryResolving)
                 {
-                    item->setTextColor(queryingColor);
+                    item->setForeground(queryingColor);
                     item->setText(QString("Resolving hostname %1...").arg(info->hostPort));
                 }
                 else if(info->queryState == QueryResolveFailed)
                 {
-                    item->setTextColor(errorColor);
+                    item->setForeground(errorColor);
                     item->setText(QString("Failed to resolve %1...").arg(info->hostPort));
                 }
                 if(bAddItem)
@@ -198,7 +198,7 @@ void MainWindow::CreateTableItemOrUpdate(size_t row, size_t col, QTableWidget *t
                 break;
             case kBrowserColMap:
                 item->setText(info->currentMap);
-                item->setTextColor(errorColor);
+                item->setForeground(errorColor);
                 break;
             case kBrowserColPing:
             {
@@ -207,9 +207,9 @@ void MainWindow::CreateTableItemOrUpdate(size_t row, size_t col, QTableWidget *t
 
                 item->setText(QString("%1, Ø%2").arg(QString::number(info->lastPing), QString::number(avgPing)));
                 if(info->lastPing > 200)
-                    item->setTextColor(errorColor);
+                    item->setForeground(errorColor);
                 else
-                    item->setTextColor(queryingColor);
+                    item->setForeground(queryingColor);
                 break;
             }
         }

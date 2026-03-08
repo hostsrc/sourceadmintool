@@ -52,7 +52,7 @@ void MainWindow::processCommand()
     ServerTableIndexItem *item = this->GetServerTableIndexItem(this->ui->browserTable->currentRow());
     ServerInfo *info = item->GetServerInfo();
 
-    if(info && (info->rcon == NULL || !info->rcon->isAuthed))
+    if(info && (info->rcon == nullptr || !info->rcon->isAuthed))
     {
         QList<QueuedCommand>cmds;
         cmds.append(QueuedCommand(this->ui->commandText->text(), QueuedCommandType::ConsoleCommand));
@@ -102,7 +102,7 @@ void MainWindow::rconLogin()
     ServerTableIndexItem *item = this->GetServerTableIndexItem(this->ui->browserTable->currentRow());
     ServerInfo *info = item->GetServerInfo();
 
-    if(info->rcon == NULL)
+    if(info->rcon == nullptr)
     {
         info->rcon = new RconQuery(this, info);
     }
@@ -113,7 +113,7 @@ void MainWindow::rconLogin()
         message.exec();
         return;
     }
-    if(info->rconPassword == 0)
+    if(info->rconPassword.isEmpty())
     {
         QMessageBox message(this);
         message.setText("Please enter a password");
@@ -134,7 +134,7 @@ void MainWindow::rconLoginQueued(QList<QueuedCommand>queuedcmds)
     ServerTableIndexItem *item = this->GetServerTableIndexItem(this->ui->browserTable->currentRow());
     ServerInfo *info = item->GetServerInfo();
 
-    if(info->rcon == NULL)
+    if(info->rcon == nullptr)
     {
         info->rcon = new RconQuery(this, info);
     }
@@ -145,7 +145,7 @@ void MainWindow::rconLoginQueued(QList<QueuedCommand>queuedcmds)
         message.exec();
         return;
     }
-    if(info->rconPassword == 0)
+    if(info->rconPassword.isEmpty())
     {
         QMessageBox message(this);
         message.setText("Please enter a password");
@@ -178,8 +178,7 @@ void MainWindow::RconAuthReady(ServerInfo *info, QList<QueuedCommand>queuedcmds)
     else
     {
         info->rcon->execCommand("echo Welcome user!", false);
-        QueuedCommand queuedcmd;
-        foreach(queuedcmd, queuedcmds)
+        for(const QueuedCommand &queuedcmd : queuedcmds)
         {
             if(queuedcmd.commandType == QueuedCommandType::GetLogCommand)//Get log
             {

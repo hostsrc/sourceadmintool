@@ -38,7 +38,7 @@ QString GetStringFromStream(QDataStream &stream)
     stream.device()->reset();
     stream.skipRawData(pos);
 
-    return NULL;
+    return QString();
 }
 
 QString GetRichUEStringFromStream(QDataStream &stream)
@@ -103,7 +103,7 @@ QString GetRichUEStringFromStream(QDataStream &stream)
     stream.device()->reset();
     stream.skipRawData(pos);
 
-    return NULL;
+    return QString();
 }
 
 QByteArray SendUDPQuery(QByteArray query, QHostAddress host, quint16 port, bool goldsrcSplits = false)
@@ -508,7 +508,7 @@ PlayerQuery::~PlayerQuery()
     workerThread.wait();
 
     if(this == pMain->pPlayerQuery)
-        pMain->pPlayerQuery = NULL;
+        pMain->pPlayerQuery = nullptr;
 }
 
 QList<PlayerInfo> *GetPlayerReply(QHostAddress host, quint16 port, bool goldsrcSplits)
@@ -590,7 +590,7 @@ RulesQuery::~RulesQuery()
     workerThread.wait();
 
     if(this == pMain->pRulesQuery)
-        pMain->pRulesQuery = NULL;
+        pMain->pRulesQuery = nullptr;
 }
 
 QList<RulesInfo> *GetRulesReply(QHostAddress host, quint16 port, bool goldsrcSplits)

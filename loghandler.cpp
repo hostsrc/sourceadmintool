@@ -16,11 +16,11 @@
 LogHandler::LogHandler(MainWindow *main)
 {
     this->logPort = 0;
-    this->manager = NULL;
-    this->logsocket = NULL;
-    this->pExternalIP = NULL;
-    this->pInternalIP = NULL;
-    this->pLocalAddress = NULL;
+    this->manager = nullptr;
+    this->logsocket = nullptr;
+    this->pExternalIP = nullptr;
+    this->pInternalIP = nullptr;
+    this->pLocalAddress = nullptr;
     this->createSocket();
     this->pMain = main;
     this->findLocalAddress();
@@ -74,7 +74,7 @@ void LogHandler::findLocalAddress()
 
     this->pLocalAddress->clear();
 
-    foreach (const QHostAddress &address, QNetworkInterface::allAddresses())
+    for(const QHostAddress &address : QNetworkInterface::allAddresses())
     {
         if(address.protocol() == QAbstractSocket::IPv4Protocol && address != QHostAddress(QHostAddress::LocalHost) && this->isPrivateIP(address))
         {
@@ -119,14 +119,14 @@ void LogHandler::socketDisconnected()
 
 void LogHandler::socketReadyRead()
 {
-    QByteArray datagram(this->logsocket->pendingDatagramSize(), Qt::Uninitialized);
+    QByteArray datagram(this->logsocket->pendingDatagramSize(), '\0');
 
     QHostAddress sender;
     quint16 senderPort;
 
     this->logsocket->readDatagram(datagram.data(), datagram.size(), &sender, &senderPort);
 
-    ServerInfo *info = NULL;
+    ServerInfo *info = nullptr;
     for(int i = 0; i < this->logList.size(); i++)
     {
         if(this->logList.at(i)->host == sender && this->logList.at(i)->port == senderPort)
@@ -207,7 +207,7 @@ void LogHandler::UPnPReady()
         if(this->manager)
         {
             this->manager->deleteLater();
-            this->manager = NULL;
+            this->manager = nullptr;
         }
         if(pMain->showLoggingInfo)
         {
@@ -224,7 +224,7 @@ void LogHandler::UPnPReady()
     else
     {
         this->manager->deleteLater();
-        this->manager = NULL;
+        this->manager = nullptr;
         QMessageBox::critical(this->pMain, "Log Handler Error", QString("Failed to retrieve external IP."));
     }
 }
