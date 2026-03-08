@@ -1,4 +1,4 @@
-name: Continuous Integration
+name: CI
 on:
   push:
   pull_request:
@@ -6,8 +6,8 @@ on:
      - master
   workflow_dispatch:
   schedule:
-    # Artifacts expire every 90 days
     - cron: '53 05 01 * *'
+
 jobs:
   build:
     strategy:
@@ -25,9 +25,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - name: Prepare short commit sha
-        shell: bash
-        run: echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> $GITHUB_ENV
 
       - name: Install dependencies (Linux)
         if: startsWith(runner.os, 'Linux')
@@ -75,20 +72,93 @@ jobs:
           cp $QT_ROOT_DIR/plugins/platforms/libqxcb.so package/lib/platforms || true
           cp $QT_ROOT_DIR/plugins/xcbglintegrations/*.so package/lib/xcbglintegrations || true
           cp -r $QT_ROOT_DIR/plugins/imageformats package/lib || true
+          cd package && tar czf ../SAT-linux.tar.gz * && cd ..
+
       - name: Package macOS
         if: startsWith(runner.os, 'macOS')
         run: |
           macdeployqt build/SourceAdminTool.app
           mkdir package
           mv build/SourceAdminTool.app package
+          cd package && zip -r ../SAT-mac.zip SourceAdminTool.app && cd ..
+
       - name: Package Windows
         if: startsWith(runner.os, 'Windows')
         run: |
           windeployqt --no-compiler-runtime --no-opengl-sw --no-system-d3d-compiler --no-translations --dir package build/Release/SourceAdminTool.exe
           Copy-Item GeoLite2-Country.mmdb,app_list_map.ini,commands.xml,build\Release\SourceAdminTool.exe -Destination package -PassThru
+          Compress-Archive -Path package\* -DestinationPath SAT-win.zip
 
-      - name: Create archive
+      - name: Upload artifact (release archives)
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
-          name: SAT-${{ matrix.os_short }}-${{ env.GITHUB_SHA_SHORT }}
+          name: SAT-${{ matrix.os_short }}
+          path: SAT-*.*
+
+      - name: Upload artifact (CI)
+        if: github.ref != 'refs/heads/master' || github.event_name != 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: SAT-${{ matrix.os_short }}-${{ github.sha }}
           path: package
+
+  release:
+    needs: build
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Extract version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(grep -oP 'project\(SourceAdminTool VERSION \K[0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "sha_short=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      - name: Delete existing dev release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete dev --yes 2>/dev/null || true
+          git push origin :refs/tags/dev 2>/dev/null || true
+
+      - name: Generate release notes
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          SHA_SHORT="${{ steps.version.outputs.sha_short }}"
+          {
+            echo "**Dev build** from \`${SHA_SHORT}\` — version ${VERSION} — $(date -u +%Y-%m-%d)"
+            echo ""
+            echo "### Recent changes"
+            git log --pretty=format:'- %s (`%h`)' --no-merges -15
+            echo ""
+            echo ""
+            echo "> Automated pre-release. May be unstable."
+          } > release_notes.md
+
+      - name: Create dev release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          SHA_SHORT="${{ steps.version.outputs.sha_short }}"
+          FILES=$(find artifacts -type f -name 'SAT-*.*')
+
+          gh release create dev \
+            --title "Dev Build v${VERSION} (${SHA_SHORT})" \
+            --notes-file release_notes.md \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            $FILES
