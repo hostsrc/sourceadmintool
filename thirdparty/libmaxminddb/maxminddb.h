@@ -3,95 +3,97 @@ extern "C" {
 #endif
 
 #ifndef MAXMINDDB_H
-#define MAXMINDDB_H
+    #define MAXMINDDB_H
 
-/* Request POSIX.1-2008. However, we want to remain compatible with
- * POSIX.1-2001 (since we have been historically and see no reason to drop
- * compatibility). By requesting POSIX.1-2008, we can conditionally use
- * features provided by that standard if the implementation provides it. We can
- * check for what the implementation provides by checking the _POSIX_VERSION
- * macro after including unistd.h. If a feature is in POSIX.1-2008 but not
- * POSIX.1-2001, check that macro before using the feature (or check for the
- * feature directly if possible). */
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
+    #include "maxminddb_config.h"
+    #include <stdarg.h>
+    #include <stdbool.h>
+    #include <stdint.h>
+    #include <stdio.h>
+    #include <sys/types.h>
 
-#include "maxminddb_config.h"
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <sys/types.h>
+    #ifdef __has_include
+        #if __has_include(<endian.h>)
+            #include <endian.h>
+        #elif __has_include(<sys/endian.h>)
+            #include <sys/endian.h>
+        #endif
+    #endif
 
-#ifdef _WIN32
-#include <winsock2.h>
-#include <ws2tcpip.h>
-/* libmaxminddb package version from configure */
-#define PACKAGE_VERSION "1.6.0"
+    #ifdef _WIN32
+        #include <winsock2.h>
+        #include <ws2tcpip.h>
+    /* libmaxminddb package version from configure */
 
-typedef ADDRESS_FAMILY sa_family_t;
+        #if defined(_MSC_VER)
+            /* MSVC doesn't define signed size_t, copy it from configure */
+            #define ssize_t SSIZE_T
 
-#if defined(_MSC_VER)
-/* MSVC doesn't define signed size_t, copy it from configure */
-#define ssize_t SSIZE_T
+        #endif
+    #else
+        #include <netdb.h>
+        #include <netinet/in.h>
+        #include <sys/socket.h>
+    #endif
 
-/* MSVC doesn't support restricted pointers */
-#define restrict
-#endif
-#else
-#include <netdb.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#endif
+    #if !defined(MMDB_LITTLE_ENDIAN)
+        #if defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__)
+            #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+                #define MMDB_LITTLE_ENDIAN 1
+            #endif
+        #elif defined(_WIN32) || defined(_WIN64)
+            // We assume modern Windows targets are little endian
+            #define MMDB_LITTLE_ENDIAN 1
+        #endif
+    #endif
 
-#define MMDB_DATA_TYPE_EXTENDED (0)
-#define MMDB_DATA_TYPE_POINTER (1)
-#define MMDB_DATA_TYPE_UTF8_STRING (2)
-#define MMDB_DATA_TYPE_DOUBLE (3)
-#define MMDB_DATA_TYPE_BYTES (4)
-#define MMDB_DATA_TYPE_UINT16 (5)
-#define MMDB_DATA_TYPE_UINT32 (6)
-#define MMDB_DATA_TYPE_MAP (7)
-#define MMDB_DATA_TYPE_INT32 (8)
-#define MMDB_DATA_TYPE_UINT64 (9)
-#define MMDB_DATA_TYPE_UINT128 (10)
-#define MMDB_DATA_TYPE_ARRAY (11)
-#define MMDB_DATA_TYPE_CONTAINER (12)
-#define MMDB_DATA_TYPE_END_MARKER (13)
-#define MMDB_DATA_TYPE_BOOLEAN (14)
-#define MMDB_DATA_TYPE_FLOAT (15)
+    #define MMDB_DATA_TYPE_EXTENDED (0)
+    #define MMDB_DATA_TYPE_POINTER (1)
+    #define MMDB_DATA_TYPE_UTF8_STRING (2)
+    #define MMDB_DATA_TYPE_DOUBLE (3)
+    #define MMDB_DATA_TYPE_BYTES (4)
+    #define MMDB_DATA_TYPE_UINT16 (5)
+    #define MMDB_DATA_TYPE_UINT32 (6)
+    #define MMDB_DATA_TYPE_MAP (7)
+    #define MMDB_DATA_TYPE_INT32 (8)
+    #define MMDB_DATA_TYPE_UINT64 (9)
+    #define MMDB_DATA_TYPE_UINT128 (10)
+    #define MMDB_DATA_TYPE_ARRAY (11)
+    #define MMDB_DATA_TYPE_CONTAINER (12)
+    #define MMDB_DATA_TYPE_END_MARKER (13)
+    #define MMDB_DATA_TYPE_BOOLEAN (14)
+    #define MMDB_DATA_TYPE_FLOAT (15)
 
-#define MMDB_RECORD_TYPE_SEARCH_NODE (0)
-#define MMDB_RECORD_TYPE_EMPTY (1)
-#define MMDB_RECORD_TYPE_DATA (2)
-#define MMDB_RECORD_TYPE_INVALID (3)
+    #define MMDB_RECORD_TYPE_SEARCH_NODE (0)
+    #define MMDB_RECORD_TYPE_EMPTY (1)
+    #define MMDB_RECORD_TYPE_DATA (2)
+    #define MMDB_RECORD_TYPE_INVALID (3)
 
-/* flags for open */
-#define MMDB_MODE_MMAP (1)
-#define MMDB_MODE_MASK (7)
+    /* flags for open */
+    #define MMDB_MODE_MMAP (1)
+    #define MMDB_MODE_MASK (7)
 
-/* error codes */
-#define MMDB_SUCCESS (0)
-#define MMDB_FILE_OPEN_ERROR (1)
-#define MMDB_CORRUPT_SEARCH_TREE_ERROR (2)
-#define MMDB_INVALID_METADATA_ERROR (3)
-#define MMDB_IO_ERROR (4)
-#define MMDB_OUT_OF_MEMORY_ERROR (5)
-#define MMDB_UNKNOWN_DATABASE_FORMAT_ERROR (6)
-#define MMDB_INVALID_DATA_ERROR (7)
-#define MMDB_INVALID_LOOKUP_PATH_ERROR (8)
-#define MMDB_LOOKUP_PATH_DOES_NOT_MATCH_DATA_ERROR (9)
-#define MMDB_INVALID_NODE_NUMBER_ERROR (10)
-#define MMDB_IPV6_LOOKUP_IN_IPV4_DATABASE_ERROR (11)
+    /* error codes */
+    #define MMDB_SUCCESS (0)
+    #define MMDB_FILE_OPEN_ERROR (1)
+    #define MMDB_CORRUPT_SEARCH_TREE_ERROR (2)
+    #define MMDB_INVALID_METADATA_ERROR (3)
+    #define MMDB_IO_ERROR (4)
+    #define MMDB_OUT_OF_MEMORY_ERROR (5)
+    #define MMDB_UNKNOWN_DATABASE_FORMAT_ERROR (6)
+    #define MMDB_INVALID_DATA_ERROR (7)
+    #define MMDB_INVALID_LOOKUP_PATH_ERROR (8)
+    #define MMDB_LOOKUP_PATH_DOES_NOT_MATCH_DATA_ERROR (9)
+    #define MMDB_INVALID_NODE_NUMBER_ERROR (10)
+    #define MMDB_IPV6_LOOKUP_IN_IPV4_DATABASE_ERROR (11)
 
-#if !(MMDB_UINT128_IS_BYTE_ARRAY)
-#if MMDB_UINT128_USING_MODE
+    #if !(MMDB_UINT128_IS_BYTE_ARRAY)
+        #if MMDB_UINT128_USING_MODE
 typedef unsigned int mmdb_uint128_t __attribute__((__mode__(TI)));
-#else
+        #else
 typedef unsigned __int128 mmdb_uint128_t;
-#endif
-#endif
+        #endif
+    #endif
 
 /* This is a pointer into the data section for a given IP address lookup */
 typedef struct MMDB_entry_s {
@@ -116,11 +118,11 @@ typedef struct MMDB_entry_data_s {
         uint32_t uint32;
         int32_t int32;
         uint64_t uint64;
-#if MMDB_UINT128_IS_BYTE_ARRAY
+    #if MMDB_UINT128_IS_BYTE_ARRAY
         uint8_t uint128[16];
-#else
+    #else
         mmdb_uint128_t uint128;
-#endif
+    #endif
         bool boolean;
         float float_value;
     };

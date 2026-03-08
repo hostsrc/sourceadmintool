@@ -84,43 +84,26 @@ qt_add_executable(${PROJECT_NAME}
     ${RESOURCES}
 )
 
-# Find third-party libraries (system or bundled)
-find_library(MINIUPNPC_LIB NAMES miniupnpc)
-find_path(MINIUPNPC_INCLUDE miniupnpc/miniupnpc.h)
-find_library(MAXMINDDB_LIB NAMES maxminddb libmaxminddb)
-find_path(MAXMINDDB_INCLUDE maxminddb.h)
-
-if(MINIUPNPC_LIB AND MINIUPNPC_INCLUDE)
-    message(STATUS "Found system miniupnpc: ${MINIUPNPC_LIB}")
-    # System headers are under miniupnpc/ subfolder, code uses #include <miniupnpc.h>
-    set(UPNPC_INCLUDE_DIR ${MINIUPNPC_INCLUDE}/miniupnpc)
-    set(UPNPC_LIBRARY ${MINIUPNPC_LIB})
+# Always use bundled third-party libraries to avoid dynamic library issues
+message(STATUS "Using bundled miniupnpc")
+set(UPNPC_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/miniupnpc)
+if(WIN32)
+    set(UPNPC_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/miniupnpc/lib/win/miniupnpc.lib)
+elseif(APPLE)
+    set(UPNPC_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/miniupnpc/lib/mac/libminiupnpc.a)
 else()
-    message(STATUS "Using bundled miniupnpc")
-    set(UPNPC_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/miniupnpc)
-    if(WIN32)
-        set(UPNPC_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/miniupnpc/lib/win/miniupnpc.lib)
-    elseif(APPLE)
-        set(UPNPC_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/miniupnpc/lib/mac/libminiupnpc.a)
-    else()
-        set(UPNPC_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/miniupnpc/lib/linux/libminiupnpc.a)
-    endif()
+    set(UPNPC_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/miniupnpc/lib/linux/libminiupnpc.a)
 endif()
 
-if(MAXMINDDB_LIB AND MAXMINDDB_INCLUDE)
-    message(STATUS "Found system libmaxminddb: ${MAXMINDDB_LIB}")
-    set(MMDB_INCLUDE_DIR ${MAXMINDDB_INCLUDE})
-    set(MMDB_LIBRARY ${MAXMINDDB_LIB})
+# Always use bundled libmaxminddb to avoid dynamic library issues on macOS
+message(STATUS "Using bundled libmaxminddb")
+set(MMDB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libmaxminddb)
+if(WIN32)
+    set(MMDB_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libmaxminddb/lib/win/libmaxminddb.lib)
+elseif(APPLE)
+    set(MMDB_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libmaxminddb/lib/mac/libmaxminddb.a)
 else()
-    message(STATUS "Using bundled libmaxminddb")
-    set(MMDB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libmaxminddb)
-    if(WIN32)
-        set(MMDB_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libmaxminddb/lib/win/libmaxminddb.lib)
-    elseif(APPLE)
-        set(MMDB_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libmaxminddb/lib/mac/libmaxminddb.a)
-    else()
-        set(MMDB_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libmaxminddb/lib/linux/libmaxminddb.a)
-    endif()
+    set(MMDB_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libmaxminddb/lib/linux/libmaxminddb.a)
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE
@@ -160,7 +143,7 @@ elseif(APPLE)
     )
     foreach(FILE ${BUNDLE_FILES})
         set_source_files_properties(${FILE} PROPERTIES
-            MACOSX_PACKAGE_LOCATION "MacOS"
+            MACOSX_PACKAGE_LOCATION "Resources"
         )
         target_sources(${PROJECT_NAME} PRIVATE ${FILE})
     endforeach()
