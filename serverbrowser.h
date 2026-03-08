@@ -47,6 +47,7 @@ private slots:
     void onReplyFinished(QNetworkReply *reply);
     void onTableDoubleClicked(int row, int column);
     void onContextMenu(const QPoint &pos);
+    void onLocalFilterChanged(const QString &text);
 
 private:
     void populateGames();
@@ -55,7 +56,9 @@ private:
     MainWindow *m_main;
     QNetworkAccessManager *m_manager;
     QComboBox *m_gameCombo;
+    QLineEdit *m_nameFilter;
     QLineEdit *m_mapFilter;
+    QLineEdit *m_localFilter;
     QPushButton *m_searchBtn;
     QTableWidget *m_table;
     QLabel *m_statusLabel;

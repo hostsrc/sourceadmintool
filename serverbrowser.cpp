@@ -15,6 +15,7 @@
 
 const QList<GameEntry> ServerBrowser::s_games = {
     {"Counter-Strike 2", 730},
+    {"Counter-Strike: GO", 4465480},
     {"Team Fortress 2", 440},
     {"Left 4 Dead 2", 550},
     {"Counter-Strike: Source", 240},
@@ -61,6 +62,11 @@ ServerBrowser::ServerBrowser(MainWindow *main, QWidget *parent)
     m_gameCombo->setMinimumWidth(200);
     populateGames();
 
+    QLabel *nameLabel = new QLabel("Name:", this);
+    m_nameFilter = new QLineEdit(this);
+    m_nameFilter->setPlaceholderText("Server name");
+    m_nameFilter->setMaximumWidth(200);
+
     QLabel *mapLabel = new QLabel("Map:", this);
     m_mapFilter = new QLineEdit(this);
     m_mapFilter->setPlaceholderText("e.g. de_dust2");
@@ -72,12 +78,24 @@ ServerBrowser::ServerBrowser(MainWindow *main, QWidget *parent)
 
     topBar->addWidget(gameLabel);
     topBar->addWidget(m_gameCombo);
+    topBar->addWidget(nameLabel);
+    topBar->addWidget(m_nameFilter);
     topBar->addWidget(mapLabel);
     topBar->addWidget(m_mapFilter);
     topBar->addWidget(m_searchBtn);
     topBar->addWidget(m_statusLabel, 1);
 
     layout->addLayout(topBar);
+
+    // Local filter bar to search within results
+    QHBoxLayout *filterBar = new QHBoxLayout;
+    QLabel *filterLabel = new QLabel("Filter results:", this);
+    m_localFilter = new QLineEdit(this);
+    m_localFilter->setPlaceholderText("Type to filter by name, map, or address...");
+    m_localFilter->setClearButtonEnabled(true);
+    filterBar->addWidget(filterLabel);
+    filterBar->addWidget(m_localFilter, 1);
+    layout->addLayout(filterBar);
 
     // Results table
     m_table = new QTableWidget(this);
@@ -108,10 +126,12 @@ ServerBrowser::ServerBrowser(MainWindow *main, QWidget *parent)
 
     // Connections
     connect(m_searchBtn, &QPushButton::clicked, this, &ServerBrowser::onSearchClicked);
+    connect(m_nameFilter, &QLineEdit::returnPressed, this, &ServerBrowser::onSearchClicked);
     connect(m_mapFilter, &QLineEdit::returnPressed, this, &ServerBrowser::onSearchClicked);
     connect(m_manager, &QNetworkAccessManager::finished, this, &ServerBrowser::onReplyFinished);
     connect(m_table, &QTableWidget::cellDoubleClicked, this, &ServerBrowser::onTableDoubleClicked);
     connect(m_table, &QTableWidget::customContextMenuRequested, this, &ServerBrowser::onContextMenu);
+    connect(m_localFilter, &QLineEdit::textChanged, this, &ServerBrowser::onLocalFilterChanged);
 }
 
 void ServerBrowser::populateGames()
@@ -149,6 +169,9 @@ void ServerBrowser::onSearchClicked()
 
     // Build filter string
     QString filter = QString("\\appid\\%1").arg(appId);
+
+    if(!m_nameFilter->text().isEmpty())
+        filter += QString("\\name_match\\*%1*").arg(m_nameFilter->text());
 
     if(!m_mapFilter->text().isEmpty())
         filter += QString("\\map\\%1").arg(m_mapFilter->text());
@@ -265,5 +288,31 @@ void ServerBrowser::onContextMenu(const QPoint &pos)
     else if(selected == copyAction)
     {
         QApplication::clipboard()->setText(addr);
+    }
+}
+
+void ServerBrowser::onLocalFilterChanged(const QString &text)
+{
+    QString filter = text.trimmed().toLower();
+    for(int i = 0; i < m_table->rowCount(); i++)
+    {
+        if(filter.isEmpty())
+        {
+            m_table->setRowHidden(i, false);
+            continue;
+        }
+
+        bool match = false;
+        // Check hostname, map, and address columns
+        for(int col : {kColHostname, kColMap, kColAddress, kColTags})
+        {
+            QTableWidgetItem *item = m_table->item(i, col);
+            if(item && item->text().toLower().contains(filter))
+            {
+                match = true;
+                break;
+            }
+        }
+        m_table->setRowHidden(i, !match);
     }
 }
