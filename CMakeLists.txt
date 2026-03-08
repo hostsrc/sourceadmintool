@@ -160,7 +160,7 @@ elseif(APPLE)
     )
     foreach(FILE ${BUNDLE_FILES})
         set_source_files_properties(${FILE} PROPERTIES
-            MACOSX_PACKAGE_LOCATION "MacOS"
+            MACOSX_PACKAGE_LOCATION "Resources"
         )
         target_sources(${PROJECT_NAME} PRIVATE ${FILE})
     endforeach()

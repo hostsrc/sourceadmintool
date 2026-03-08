@@ -8,6 +8,9 @@ QString BuildPath(const char *file)
 {
 #ifdef WIN32
     return QString("./%1").arg(file);
+#elif defined(__APPLE__)
+    // Data files live in Contents/Resources/ inside the app bundle
+    return QString("%1/../Resources/%2").arg(QCoreApplication::applicationDirPath(), file);
 #else
     return QString("%1/%2").arg(QCoreApplication::applicationDirPath(), file);
 #endif
