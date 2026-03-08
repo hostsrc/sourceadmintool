@@ -12,7 +12,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest, macos-13]
         include:
           - os: windows-latest
             qt_arch: win64_msvc2022_64
@@ -20,7 +20,9 @@ jobs:
           - os: ubuntu-latest
             os_short: linux
           - os: macos-latest
-            os_short: mac
+            os_short: mac-arm64
+          - os: macos-13
+            os_short: mac-x64
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
@@ -78,9 +80,10 @@ jobs:
         if: startsWith(runner.os, 'macOS')
         run: |
           macdeployqt build/SourceAdminTool.app
+          codesign --force --deep --sign - build/SourceAdminTool.app
           mkdir package
           mv build/SourceAdminTool.app package
-          cd package && zip -r ../SAT-mac.zip SourceAdminTool.app && cd ..
+          cd package && zip -r ../SAT-${{ matrix.os_short }}.zip SourceAdminTool.app && cd ..
 
       - name: Package Windows
         if: startsWith(runner.os, 'Windows')
