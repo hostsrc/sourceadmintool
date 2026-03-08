@@ -106,7 +106,7 @@ QString GetRichUEStringFromStream(QDataStream &stream)
     return NULL;
 }
 
-QByteArray SendUDPQuery(QByteArray query, QHostAddress host, quint16 port)
+QByteArray SendUDPQuery(QByteArray query, QHostAddress host, quint16 port, bool goldsrcSplits = false)
 {
     qint8 tryCount = 0;
 
@@ -141,6 +141,64 @@ QByteArray SendUDPQuery(QByteArray query, QHostAddress host, quint16 port)
                     qint32 id;
                     qint8 skip = 0;
                     response >> id;
+
+                    if(goldsrcSplits)
+                    {
+                        //GoldSrc split format: single byte encodes (packetNum << 4) | numPackets
+                        quint8 packetByte;
+                        response >> packetByte;
+                        qint8 total = packetByte & 0x0F;
+                        qint8 packetNum = (packetByte & 0xF0) >> 4;
+
+                        reply.clear();
+                        reply.append(response.device()->read(response.device()->size()));
+
+                        while(packetNum < total-1)
+                        {
+                            if(!socket.isValid())
+                                break;
+                            if(socket.write(query) == -1 || !socket.waitForReadyRead(QUERY_TIMEOUT))
+                                break;
+
+                            QByteArray replyTemp;
+                            replyTemp.resize(socket.pendingDatagramSize());
+                            socket.readDatagram(replyTemp.data(), replyTemp.size());
+
+                            QDataStream tempStream(replyTemp);
+                            tempStream.setByteOrder(QDataStream::LittleEndian);
+
+                            tempStream >> header;
+
+                            qint32 tempId;
+                            tempStream >> tempId;
+
+                            if(header != -2 || id != tempId)
+                                break;
+
+                            tempStream >> packetByte;
+                            packetNum = (packetByte & 0xF0) >> 4;
+
+                            reply.append(tempStream.device()->read(tempStream.device()->size()));
+                        }
+
+                        socket.close();
+
+                        //Strip the inner header (0xFFFFFFFF) from assembled payload
+                        if(reply.size() >= 4)
+                        {
+                            QDataStream assembled(reply);
+                            assembled.setByteOrder(QDataStream::LittleEndian);
+                            assembled >> header;
+
+                            if(header == -1)
+                            {
+                                QByteArray result;
+                                result.append(reply);
+                                return result;
+                            }
+                        }
+                        return reply;
+                    }
 
                     bool compressed;
                     response.device()->seek(response.device()->pos()-1);
@@ -225,6 +283,7 @@ InfoReply::InfoReply(QByteArray response, qint64 ping)
     this->success = false;
     this->appId = -1;
     this->rawServerId = 0;
+    this->goldsrc = false;
     this->ping = ping;
 
     if(response.size() > 5)
@@ -314,6 +373,12 @@ InfoReply::InfoReply(QByteArray response, qint64 ping)
                 this->appId = temp & ((1 << 24) - 1);
             }
 
+            //GoldSrc servers may respond with Source format but protocol 48
+            if(this->protocol == 48)
+            {
+                this->goldsrc = true;
+            }
+
             // TODO: move these out to a config and add more games.
             // Unreal Engine uses Extended ASCII instead of UTF8, and also supports colors in hostname.
             if (this->appId == k_nAppIDKillingFloor || this->appId == k_nAppIDKillingFloor2)
@@ -321,6 +386,44 @@ InfoReply::InfoReply(QByteArray response, qint64 ping)
                 data.device()->seek(hostnamePos);
                 this->hostnameRich = GetRichUEStringFromStream(data);
             }
+        }
+        else if(header == -1 && check == A2S_INFO_GOLDSRC_CHECK)
+        {
+            this->success = true;
+            this->goldsrc = true;
+
+            GetStringFromStream(data);//Address (ip:port), not used
+
+            this->hostnameRich = GetStringFromStream(data);
+            this->map = GetStringFromStream(data);
+            this->mod = GetStringFromStream(data);
+            this->gamedesc = GetStringFromStream(data);
+
+            data >> this->players;
+            data >> this->maxplayers;
+            data >> this->protocol;
+
+            data.device()->getChar(&(this->type));
+            data.device()->getChar(&(this->os));
+
+            data >> this->visibility;
+
+            qint8 isMod;
+            data >> isMod;
+
+            if(isMod)
+            {
+                GetStringFromStream(data);//Mod URL info
+                GetStringFromStream(data);//Mod URL download
+                data.skipRawData(sizeof(qint8));//Null byte
+                data.skipRawData(sizeof(qint32));//Mod version
+                data.skipRawData(sizeof(qint32));//Mod size
+                data.skipRawData(sizeof(qint8));//Server-side only
+                data.skipRawData(sizeof(qint8));//Custom client DLL
+            }
+
+            data >> this->vac;
+            data >> this->bots;
         }
     }
 }
@@ -408,7 +511,7 @@ PlayerQuery::~PlayerQuery()
         pMain->pPlayerQuery = NULL;
 }
 
-QList<PlayerInfo> *GetPlayerReply(QHostAddress host, quint16 port)
+QList<PlayerInfo> *GetPlayerReply(QHostAddress host, quint16 port, bool goldsrcSplits)
 {
     QList<PlayerInfo> *list = new QList<PlayerInfo>();
 
@@ -417,7 +520,7 @@ QList<PlayerInfo> *GetPlayerReply(QHostAddress host, quint16 port)
     data.setByteOrder(QDataStream::LittleEndian);
     data << A2S_HEADER << (qint8)A2S_PLAYER << qint32(-1);
 
-    QByteArray byteResponse = SendUDPQuery(query, host, port);
+    QByteArray byteResponse = SendUDPQuery(query, host, port, goldsrcSplits);
     QDataStream response(byteResponse);
     response.setByteOrder(QDataStream::LittleEndian);
 
@@ -437,7 +540,7 @@ QList<PlayerInfo> *GetPlayerReply(QHostAddress host, quint16 port)
             data.device()->reset();
             data << A2S_HEADER << (qint8)A2S_PLAYER << challenge;
 
-            byteResponse = SendUDPQuery(query, host, port);
+            byteResponse = SendUDPQuery(query, host, port, goldsrcSplits);
         }
         QDataStream playerResponse(byteResponse);
 
@@ -490,7 +593,7 @@ RulesQuery::~RulesQuery()
         pMain->pRulesQuery = NULL;
 }
 
-QList<RulesInfo> *GetRulesReply(QHostAddress host, quint16 port)
+QList<RulesInfo> *GetRulesReply(QHostAddress host, quint16 port, bool goldsrcSplits)
 {
     QList<RulesInfo> *list = new QList<RulesInfo>();
 
@@ -499,7 +602,7 @@ QList<RulesInfo> *GetRulesReply(QHostAddress host, quint16 port)
     data.setByteOrder(QDataStream::LittleEndian);
     data << A2S_HEADER << (qint8)A2S_RULES << qint32(-1);
 
-    QByteArray byteResponse = SendUDPQuery(query, host, port);
+    QByteArray byteResponse = SendUDPQuery(query, host, port, goldsrcSplits);
     QDataStream response(byteResponse);
     response.setByteOrder(QDataStream::LittleEndian);
 
@@ -517,7 +620,7 @@ QList<RulesInfo> *GetRulesReply(QHostAddress host, quint16 port)
         data.device()->reset();
         data << A2S_HEADER << (qint8)A2S_RULES << challenge;
 
-        byteResponse = SendUDPQuery(query, host, port);
+        byteResponse = SendUDPQuery(query, host, port, goldsrcSplits);
     }
 
     QDataStream rulesResponse(byteResponse);

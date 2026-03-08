@@ -422,6 +422,7 @@ void MainWindow::ServerInfoReady(InfoReply *reply, ServerTableIndexItem *indexCe
         bool appIdChanged = info->appId != reply->appId;
 
         info->vac = reply->vac;
+        info->goldsrc = reply->goldsrc;
         info->appId = reply->appId;
         info->os = reply->os;
         info->tags = reply->tags;

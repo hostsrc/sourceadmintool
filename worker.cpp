@@ -12,14 +12,16 @@ void Worker::getServerInfo(QHostAddress *host, quint16 port, ServerTableIndexIte
 
 void Worker::getPlayerInfo(QHostAddress *host, quint16 port, ServerTableIndexItem *item)
 {
-    QList<PlayerInfo> *list = GetPlayerReply(*host, port);
+    bool goldsrcSplits = item->GetServerInfo()->goldsrc;
+    QList<PlayerInfo> *list = GetPlayerReply(*host, port, goldsrcSplits);
     emit playerInfoReady(list, item);
     this->currentThread()->quit();
 }
 
 void Worker::getRulesInfo(QHostAddress *host, quint16 port, ServerTableIndexItem *item)
 {
-    QList<RulesInfo> *list = GetRulesReply(*host, port);
+    bool goldsrcSplits = item->GetServerInfo()->goldsrc;
+    QList<RulesInfo> *list = GetRulesReply(*host, port, goldsrcSplits);
     emit rulesInfoReady(list, item);
     this->currentThread()->quit();
 }

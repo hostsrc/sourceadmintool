@@ -14,6 +14,7 @@
 #define A2S_INFO 0x54
 #define A2S_INFO_CHALLENGE_CHECK 0x41
 #define A2S_INFO_CHECK 0x49
+#define A2S_INFO_GOLDSRC_CHECK 0x6D
 #define A2S_INFO_STRING "Source Engine Query"
 
 #define A2S_PLAYER 0x55
@@ -47,6 +48,7 @@ public:
     QString tags;
     QString version;
     qint8 protocol;
+    bool goldsrc;
     qint64 ping;
     QString serverID;
     quint64 rawServerId;
@@ -114,9 +116,9 @@ signals:
     void query(QHostAddress *, quint16, ServerTableIndexItem *);
 };
 
-QList<PlayerInfo> *GetPlayerReply(QHostAddress, quint16);
+QList<PlayerInfo> *GetPlayerReply(QHostAddress, quint16, bool goldsrcSplits = false);
 InfoReply *GetInfoReply(QHostAddress, quint16);
-QList<RulesInfo> *GetRulesReply(QHostAddress, quint16);
+QList<RulesInfo> *GetRulesReply(QHostAddress, quint16, bool goldsrcSplits = false);
 QString SecondsToDisplayTime(float time);
 QString GetStringFromStream(QDataStream &stream);
 #endif // INFOQUERY

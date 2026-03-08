@@ -59,6 +59,7 @@ public:
     void GetCountryFlag();
 public:
     bool haveInfo;
+    bool goldsrc;
     qint8 protocol;
     QString tags;
     quint8 vac;

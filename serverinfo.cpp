@@ -15,6 +15,7 @@ ServerInfo::ServerInfo(QString server, QueryState state, bool isIP)
     this->os = "";
     this->tags = "";
     this->haveInfo = false;
+    this->goldsrc = false;
     this->queryState = state;
 
     QStringList address = server.split(":");
