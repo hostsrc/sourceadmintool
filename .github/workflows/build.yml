@@ -91,9 +91,10 @@ jobs:
             -days 1 -nodes -subj "/CN=SAT Build" \
             -addext "keyUsage=digitalSignature" \
             -addext "extendedKeyUsage=codeSigning"
-          openssl pkcs12 -export -out /tmp/cs.p12 -inkey /tmp/cs.key -in /tmp/cs.crt -passout pass:build -legacy
+          openssl pkcs12 -export -out /tmp/cs.p12 -inkey /tmp/cs.key -in /tmp/cs.crt -passout pass:build
           security import /tmp/cs.p12 -k "$KEYCHAIN" -P "build" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASS" "$KEYCHAIN"
+          security add-trusted-cert -d -r trustRoot -k "$KEYCHAIN" /tmp/cs.crt
           IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" | head -1 | grep -oE '"[^"]+"' | tr -d '"')
           echo "Signing identity: $IDENTITY"
           # Strip all existing signatures first (Qt frameworks have Qt's Team ID)
