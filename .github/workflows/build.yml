@@ -78,24 +78,45 @@ jobs:
         if: startsWith(runner.os, 'macOS')
         run: |
           macdeployqt build/SourceAdminTool.app
-          # Re-sign all code with consistent ad-hoc identity and hardened runtime
-          # macOS 26 CSM requires all code in a process to share the same Team ID
-          # 1. Sign all dylibs (standalone libraries)
-          find build/SourceAdminTool.app -name "*.dylib" -exec codesign --force --options runtime --sign - {} \;
-          # 2. Sign the actual binary inside each framework (must be before framework bundle)
+          # macOS 26 CSM requires all code in a process to share the same Team ID.
+          # Create a self-signed certificate so all code gets a real, consistent Team ID.
+          KEYCHAIN="build.keychain-db"
+          KEYCHAIN_PASS="ci-build"
+          security create-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN"
+          security set-keychain-settings "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          # Generate self-signed code signing certificate
+          openssl req -x509 -newkey rsa:2048 -keyout /tmp/cs.key -out /tmp/cs.crt \
+            -days 1 -nodes -subj "/CN=SAT Build" \
+            -addext "keyUsage=digitalSignature" \
+            -addext "extendedKeyUsage=codeSigning"
+          openssl pkcs12 -export -out /tmp/cs.p12 -inkey /tmp/cs.key -in /tmp/cs.crt -passout pass:
+          security import /tmp/cs.p12 -k "$KEYCHAIN" -P "" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASS" "$KEYCHAIN"
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" | head -1 | grep -oE '"[^"]+"' | tr -d '"')
+          echo "Signing identity: $IDENTITY"
+          # Strip all existing signatures first (Qt frameworks have Qt's Team ID)
+          find build/SourceAdminTool.app -name "*.dylib" -exec codesign --remove-signature {} \; 2>/dev/null || true
           for fw in build/SourceAdminTool.app/Contents/Frameworks/*.framework; do
             name=$(basename "${fw%.framework}")
             binary="$fw/Versions/A/$name"
-            if [ -f "$binary" ]; then
-              codesign --force --options runtime --sign - "$binary"
-            fi
+            [ -f "$binary" ] && codesign --remove-signature "$binary" 2>/dev/null || true
           done
-          # 3. Sign framework bundles (creates the seal over the re-signed binary)
-          find build/SourceAdminTool.app/Contents/Frameworks -name "*.framework" -maxdepth 1 -exec codesign --force --options runtime --sign - {} \;
-          # 4. Sign the app bundle last
-          codesign --force --options runtime --sign - build/SourceAdminTool.app
-          # Verify all signatures are consistent
+          # Re-sign everything with the self-signed certificate (innermost to outermost)
+          find build/SourceAdminTool.app -name "*.dylib" -exec codesign --force --options runtime --sign "$IDENTITY" --keychain "$KEYCHAIN" {} \;
+          for fw in build/SourceAdminTool.app/Contents/Frameworks/*.framework; do
+            name=$(basename "${fw%.framework}")
+            binary="$fw/Versions/A/$name"
+            [ -f "$binary" ] && codesign --force --options runtime --sign "$IDENTITY" --keychain "$KEYCHAIN" "$binary"
+          done
+          find build/SourceAdminTool.app/Contents/Frameworks -name "*.framework" -maxdepth 1 -exec codesign --force --options runtime --sign "$IDENTITY" --keychain "$KEYCHAIN" {} \;
+          codesign --force --options runtime --sign "$IDENTITY" --keychain "$KEYCHAIN" build/SourceAdminTool.app
+          # Verify
           codesign --verify --deep --strict build/SourceAdminTool.app
+          # Clean up
+          security delete-keychain "$KEYCHAIN"
+          rm -f /tmp/cs.key /tmp/cs.crt /tmp/cs.p12
           mkdir package
           mv build/SourceAdminTool.app package
           cd package && zip -r ../SAT-${{ matrix.os_short }}.zip SourceAdminTool.app && cd ..
