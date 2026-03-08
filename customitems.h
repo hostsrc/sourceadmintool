@@ -2,9 +2,12 @@
 #define PLAYERTIMEITEM_H
 
 #include <QTableWidgetItem>
+#include <QWidget>
+#include <QList>
 
 class ServerInfo;
 class MainWindow;
+struct TimestampedValue;
 
 //Time played in player area
 class PlayerTimeTableItem : public QTableWidgetItem
@@ -42,6 +45,26 @@ public:
         return (this->players < ((PlayerTableItem *)&other)->players);
     }
     int players;
+};
+
+// Interactive graph widget with timestamp tooltips on hover
+class GraphWidget : public QWidget
+{
+    Q_OBJECT
+public:
+    enum GraphType { PingGraph, PlayerGraph };
+
+    GraphWidget(const QList<TimestampedValue> *data, GraphType type, int maxValue, QWidget *parent = nullptr);
+
+protected:
+    void paintEvent(QPaintEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+
+private:
+    const QList<TimestampedValue> *dataList;
+    GraphType graphType;
+    int maxVal;
+    int getVisibleStartIndex() const;
 };
 
 #endif // PLAYERTIMEITEM_H

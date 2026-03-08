@@ -9,6 +9,14 @@
 #include "rcon.h"
 #include "customitems.h"
 
+struct TimestampedValue
+{
+    qint64 timestamp;
+    int value;
+    TimestampedValue() : timestamp(0), value(0) {}
+    TimestampedValue(int val) : timestamp(QDateTime::currentMSecsSinceEpoch()), value(val) {}
+};
+
 class MainWindow;
 
 enum QueryState
@@ -89,7 +97,7 @@ public:
     bool saveRcon;
     RconQuery *rcon;
     QHash<QString, PlayerLogInfo> logHashTable;
-    QList<int> pingList;
+    QList<TimestampedValue> pingList;
     quint16 lastPing;
     quint16 avgPing;
     QImage countryFlag;
@@ -99,7 +107,7 @@ public:
     QString group;
     QString alias;
     QString notes;
-    QList<int> playerCountHistory;
+    QList<TimestampedValue> playerCountHistory;
 };
 
 class HostQueryResult : public QObject

@@ -318,66 +318,18 @@ void MainWindow::UpdateInfoTable(ServerInfo *info, bool current, QList<RulesInfo
                 this->ui->infoTable->insertRow(row);
                 this->ui->infoTable->setSpan(row, 0, 1, 2);
                 this->ui->infoTable->setRowHeight(row, 50);
-                QPixmap pixmap(this->ui->infoTable->width(), 50);
-                pixmap.fill(Qt::transparent);
-
-                QPainter painter(&pixmap);
-
-                painter.setPen(QPen(Qt::transparent));
-                QLinearGradient lgrad(QPoint(0, 0), QPoint(0,50));
-                lgrad.setColorAt(0.0, Qt::red);
-                lgrad.setColorAt(1.0, Qt::green);
-                painter.setBrush(lgrad);
-
-                int idx = (info->pingList.length() - this->ui->infoTable->width()) > 0 ? info->pingList.length() - this->ui->infoTable->width() : 0;
-
-                for(int j = idx; j < info->pingList.length(); j++)
-                {
-                    int h = qRound(((float)info->pingList.at(j)/300.0)*50);
-
-                    if(h <= 1)
-                        h = 2;
-
-                    if(h >= 50)
-                        h = 50;
-
-                    painter.drawRect((1*(j-idx)), 50-h, 1, h);
-                }
-                QLabel *label = new QLabel(this);
-                label->setPixmap(pixmap);
-                this->ui->infoTable->setCellWidget(row, 0, label);
+                auto *pingGraph = new GraphWidget(&info->pingList, GraphWidget::PingGraph, 300, this);
+                this->ui->infoTable->setCellWidget(row, 0, pingGraph);
                 row++;
             }
             else if(item.display == "PlayerGraph" && info->playerCountHistory.length() > 1)
             {
-                // Player count history graph
                 this->ui->infoTable->insertRow(row);
                 this->ui->infoTable->setSpan(row, 0, 1, 2);
                 this->ui->infoTable->setRowHeight(row, 50);
-                QPixmap pixmap(this->ui->infoTable->width(), 50);
-                pixmap.fill(Qt::transparent);
-
-                QPainter painter(&pixmap);
-                painter.setPen(QPen(Qt::transparent));
-
-                QLinearGradient lgrad(QPoint(0, 0), QPoint(0, 50));
-                lgrad.setColorAt(0.0, QColor(255, 165, 0)); // orange at top (full)
-                lgrad.setColorAt(1.0, QColor(0, 150, 255));  // blue at bottom (empty)
-                painter.setBrush(lgrad);
-
                 int maxP = info->maxPlayers > 0 ? info->maxPlayers : 32;
-                int idx = (info->playerCountHistory.length() - this->ui->infoTable->width()) > 0 ? info->playerCountHistory.length() - this->ui->infoTable->width() : 0;
-
-                for(int j = idx; j < info->playerCountHistory.length(); j++)
-                {
-                    int h = qRound(((float)info->playerCountHistory.at(j) / (float)maxP) * 50);
-                    if(h <= 0) h = 1;
-                    if(h > 50) h = 50;
-                    painter.drawRect((j - idx), 50 - h, 1, h);
-                }
-                QLabel *label = new QLabel(this);
-                label->setPixmap(pixmap);
-                this->ui->infoTable->setCellWidget(row, 0, label);
+                auto *playerGraph = new GraphWidget(&info->playerCountHistory, GraphWidget::PlayerGraph, maxP, this);
+                this->ui->infoTable->setCellWidget(row, 0, playerGraph);
                 row++;
             }
             else if(!item.val.isEmpty() && item.display != "PlayerGraph")
@@ -436,17 +388,17 @@ void MainWindow::ServerInfoReady(InfoReply *reply, ServerTableIndexItem *indexCe
             info->pingList.removeFirst();
         }
 
-        info->pingList.append(reply->ping);
+        info->pingList.append(TimestampedValue(reply->ping));
 
         quint64 totalPing = 0;
         quint16 totalPings = 0;
 
         for(int i = 0; i < info->pingList.length(); i++)
         {
-            if(info->pingList.at(i) == 2000)//only count completed pings
+            if(info->pingList.at(i).value == 2000)//only count completed pings
                 continue;
 
-            totalPing += info->pingList.at(i);
+            totalPing += info->pingList.at(i).value;
             totalPings++;
         }
 
@@ -484,7 +436,7 @@ void MainWindow::ServerInfoReady(InfoReply *reply, ServerTableIndexItem *indexCe
         // Track player count history
         while(info->playerCountHistory.length() >= 1000)
             info->playerCountHistory.removeFirst();
-        info->playerCountHistory.append(reply->players);
+        info->playerCountHistory.append(TimestampedValue(reply->players));
 
         if (!info->countryFlag.isNull())
         {
