@@ -91,6 +91,9 @@ MainWindow::MainWindow(QWidget *parent) :
     QVBoxLayout *browseLayout = new QVBoxLayout(ui->browseContainer);
     browseLayout->setContentsMargins(0, 0, 0, 0);
     browseLayout->addWidget(m_serverBrowser);
+
+    // Load Steam API key (must be after m_serverBrowser is created)
+    settings->LoadSteamApiKey();
 }
 
 MainWindow::~MainWindow()

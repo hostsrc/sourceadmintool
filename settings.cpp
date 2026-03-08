@@ -176,9 +176,6 @@ void Settings::ReadSettings()
     if(pMain->GetUpdateChecker())
         pMain->GetUpdateChecker()->setUpdateUrl(pSettings->value("updateUrl", DEFAULT_UPDATE_URL).toString());
 
-    if(pMain->GetServerBrowser())
-        pMain->GetServerBrowser()->setApiKey(pSettings->value("steamApiKey", "").toString());
-
     bool hideOffline = pSettings->value("hideOffline", false).toBool();
     pMain->GetHideOfflineCheck()->setChecked(hideOffline);
 
@@ -274,8 +271,12 @@ void Settings::SaveSettings()
     if(pMain->GetUpdateChecker())
         pSettings->setValue("updateUrl", pMain->GetUpdateChecker()->updateUrl());
 
-    if(pMain->GetServerBrowser())
-        pSettings->setValue("steamApiKey", pMain->GetServerBrowser()->apiKey());
+    if(pMain->GetServerBrowser() && !pMain->GetServerBrowser()->apiKey().isEmpty())
+    {
+        SimpleCrypt crypt;
+        crypt.setKey(0x5A4D4F4E4B455921LL);
+        pSettings->setValue("steamApiKey", crypt.encryptToString(pMain->GetServerBrowser()->apiKey()));
+    }
 
     pSettings->beginGroup("servers");
 
@@ -328,6 +329,24 @@ void Settings::SaveSettings()
         }
     }
     pSettings->endGroup();
+}
+
+void Settings::LoadSteamApiKey()
+{
+    if(!pMain->GetServerBrowser())
+        return;
+
+    QString encKey = pSettings->value("steamApiKey", "").toString();
+    if(!encKey.isEmpty())
+    {
+        SimpleCrypt crypt;
+        crypt.setKey(0x5A4D4F4E4B455921LL);
+        QString decrypted = crypt.decryptToString(encKey);
+        if(crypt.lastError() == SimpleCrypt::ErrorNoError)
+            pMain->GetServerBrowser()->setApiKey(decrypted);
+        else
+            pMain->GetServerBrowser()->setApiKey(encKey); // fallback: treat as plaintext (migration)
+    }
 }
 
 void Settings::GetCtxCommands()

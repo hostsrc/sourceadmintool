@@ -18,6 +18,7 @@ public:
     void SaveSettings();
     void GetAppIDListMap();
     void GetCtxCommands();
+    void LoadSteamApiKey();
     QSettings *pSettings;
 private:
     QSettings *pAppIds;
