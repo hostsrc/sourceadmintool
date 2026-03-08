@@ -11,6 +11,7 @@
 #include <QDesktopServices>
 #include <QWidgetAction>
 #include <QTextEdit>
+#include <QFile>
 
 #define STEAMID_COLUMN 4
 #define NAME_COLUMN 1
@@ -504,26 +505,33 @@ void MainWindow::darkThemeTriggered()
     if(this->ui->actionDark_Theme->isChecked())
     {
         QPalette palette;
-        palette.setColor(QPalette::Window, QColor(33,33,37));          // --background
-        palette.setColor(QPalette::WindowText, QColor(250,250,250));   // --foreground
-        palette.setColor(QPalette::Base, QColor(46,46,46));            // --card
-        palette.setColor(QPalette::AlternateBase, QColor(62,62,62));   // --secondary
-        palette.setColor(QPalette::ToolTipBase, QColor(46,46,46));     // --popover
-        palette.setColor(QPalette::ToolTipText, QColor(250,250,250));  // --popover-foreground
-        palette.setColor(QPalette::Text, QColor(250,250,250));         // --foreground
-        palette.setColor(QPalette::Button, QColor(33,33,37));          // --background
-        palette.setColor(QPalette::ButtonText, QColor(250,250,250));   // --foreground
-        palette.setColor(QPalette::BrightText, QColor(220,100,80));    // --destructive
-
-        palette.setColor(QPalette::Highlight, QColor(100,90,200));     // --sidebar-primary (~oklch 0.488 0.243 264)
-        palette.setColor(QPalette::HighlightedText, QColor(250,250,250)); // --sidebar-primary-foreground
-        palette.setColor(QPalette::Link, QColor(250,250,250));         // --foreground
-        palette.setColor(QPalette::LinkVisited, QColor(174,174,174));  // --muted-foreground
+        palette.setColor(QPalette::Window, QColor(33,33,37));
+        palette.setColor(QPalette::WindowText, QColor(250,250,250));
+        palette.setColor(QPalette::Base, QColor(46,46,46));
+        palette.setColor(QPalette::AlternateBase, QColor(62,62,62));
+        palette.setColor(QPalette::ToolTipBase, QColor(46,46,46));
+        palette.setColor(QPalette::ToolTipText, QColor(250,250,250));
+        palette.setColor(QPalette::Text, QColor(250,250,250));
+        palette.setColor(QPalette::Button, QColor(33,33,37));
+        palette.setColor(QPalette::ButtonText, QColor(250,250,250));
+        palette.setColor(QPalette::BrightText, QColor(220,100,80));
+        palette.setColor(QPalette::Highlight, QColor(100,90,200));
+        palette.setColor(QPalette::HighlightedText, QColor(250,250,250));
+        palette.setColor(QPalette::Link, QColor(250,250,250));
+        palette.setColor(QPalette::LinkVisited, QColor(174,174,174));
         qApp->setPalette(palette);
+
+        QFile qss(":/themes/dark-theme.qss");
+        if(qss.open(QFile::ReadOnly | QFile::Text))
+        {
+            qApp->setStyleSheet(qss.readAll());
+            qss.close();
+        }
     }
     else
     {
         qApp->setPalette(defaultPalette);
+        qApp->setStyleSheet("");
     }
 
     QTableWidgetItem *hostname;

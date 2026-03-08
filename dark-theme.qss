@@ -1,0 +1,315 @@
+/* Dark theme based on shadcn/ui oklch color palette */
+
+/* === Global === */
+QWidget {
+    background-color: rgb(33, 33, 37);
+    color: rgb(250, 250, 250);
+    selection-background-color: rgb(100, 90, 200);
+    selection-color: rgb(250, 250, 250);
+}
+
+/* === Menu Bar === */
+QMenuBar {
+    background-color: rgb(33, 33, 37);
+    border-bottom: 1px solid rgba(255, 255, 255, 25);
+}
+
+QMenuBar::item {
+    padding: 4px 8px;
+    background: transparent;
+}
+
+QMenuBar::item:selected {
+    background-color: rgb(62, 62, 62);
+    border-radius: 3px;
+}
+
+/* === Menus === */
+QMenu {
+    background-color: rgb(46, 46, 46);
+    border: 1px solid rgba(255, 255, 255, 25);
+    padding: 4px;
+}
+
+QMenu::item {
+    padding: 4px 24px 4px 8px;
+    border-radius: 3px;
+}
+
+QMenu::item:selected {
+    background-color: rgb(62, 62, 62);
+}
+
+QMenu::separator {
+    height: 1px;
+    background-color: rgba(255, 255, 255, 25);
+    margin: 4px 8px;
+}
+
+QMenu::indicator {
+    width: 14px;
+    height: 14px;
+    margin-left: 4px;
+}
+
+/* === Tab Widget === */
+QTabWidget::pane {
+    background-color: rgb(46, 46, 46);
+    border: 1px solid rgba(255, 255, 255, 25);
+}
+
+QTabBar::tab {
+    background-color: rgb(33, 33, 37);
+    color: rgb(174, 174, 174);
+    padding: 6px 16px;
+    border: 1px solid rgba(255, 255, 255, 25);
+    border-bottom: none;
+}
+
+QTabBar::tab:selected {
+    background-color: rgb(46, 46, 46);
+    color: rgb(250, 250, 250);
+    border-bottom: 2px solid rgb(100, 90, 200);
+}
+
+QTabBar::tab:hover:!selected {
+    background-color: rgb(62, 62, 62);
+    color: rgb(250, 250, 250);
+}
+
+/* === Tables === */
+QTableWidget, QTableView {
+    background-color: rgb(46, 46, 46);
+    alternate-background-color: rgb(40, 40, 44);
+    gridline-color: rgba(255, 255, 255, 15);
+    border: 1px solid rgba(255, 255, 255, 25);
+    outline: none;
+}
+
+QTableWidget::item, QTableView::item {
+    padding: 2px 4px;
+    border: none;
+}
+
+QTableWidget::item:selected, QTableView::item:selected {
+    background-color: rgb(100, 90, 200);
+    color: rgb(250, 250, 250);
+}
+
+QTableWidget::item:hover, QTableView::item:hover {
+    background-color: rgb(62, 62, 62);
+}
+
+/* === Table Headers === */
+QHeaderView::section {
+    background-color: rgb(33, 33, 37);
+    color: rgb(174, 174, 174);
+    padding: 4px 6px;
+    border: none;
+    border-right: 1px solid rgba(255, 255, 255, 15);
+    border-bottom: 1px solid rgba(255, 255, 255, 25);
+    font-weight: bold;
+}
+
+QHeaderView::section:hover {
+    background-color: rgb(46, 46, 46);
+    color: rgb(250, 250, 250);
+}
+
+/* === Buttons === */
+QPushButton {
+    background-color: rgb(62, 62, 62);
+    color: rgb(250, 250, 250);
+    border: 1px solid rgba(255, 255, 255, 25);
+    border-radius: 4px;
+    padding: 4px 14px;
+    min-height: 20px;
+}
+
+QPushButton:hover {
+    background-color: rgb(100, 90, 200);
+    border-color: rgb(100, 90, 200);
+}
+
+QPushButton:pressed {
+    background-color: rgb(80, 72, 170);
+}
+
+QPushButton:disabled {
+    background-color: rgb(46, 46, 46);
+    color: rgb(120, 120, 120);
+    border-color: rgba(255, 255, 255, 15);
+}
+
+/* === Line Edits === */
+QLineEdit {
+    background-color: rgba(255, 255, 255, 38);
+    color: rgb(250, 250, 250);
+    border: 1px solid rgba(255, 255, 255, 25);
+    border-radius: 4px;
+    padding: 4px 8px;
+}
+
+QLineEdit:focus {
+    border-color: rgb(100, 90, 200);
+}
+
+QLineEdit:disabled {
+    background-color: rgb(40, 40, 44);
+    color: rgb(120, 120, 120);
+}
+
+/* === Plain Text / Text Edit (RCON console, log, chat) === */
+QPlainTextEdit, QTextEdit {
+    background-color: rgb(26, 26, 30);
+    color: rgb(250, 250, 250);
+    border: 1px solid rgba(255, 255, 255, 25);
+    border-radius: 4px;
+    padding: 4px;
+}
+
+QPlainTextEdit:focus, QTextEdit:focus {
+    border-color: rgb(100, 90, 200);
+}
+
+/* === Checkboxes === */
+QCheckBox {
+    spacing: 6px;
+    color: rgb(250, 250, 250);
+}
+
+QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+    border: 1px solid rgba(255, 255, 255, 25);
+    border-radius: 3px;
+    background-color: rgba(255, 255, 255, 38);
+}
+
+QCheckBox::indicator:checked {
+    background-color: rgb(100, 90, 200);
+    border-color: rgb(100, 90, 200);
+}
+
+QCheckBox::indicator:hover {
+    border-color: rgb(100, 90, 200);
+}
+
+/* === Combo Box === */
+QComboBox {
+    background-color: rgba(255, 255, 255, 38);
+    color: rgb(250, 250, 250);
+    border: 1px solid rgba(255, 255, 255, 25);
+    border-radius: 4px;
+    padding: 4px 8px;
+    min-height: 20px;
+}
+
+QComboBox:hover {
+    border-color: rgb(100, 90, 200);
+}
+
+QComboBox::drop-down {
+    border: none;
+    padding-right: 6px;
+}
+
+QComboBox QAbstractItemView {
+    background-color: rgb(46, 46, 46);
+    border: 1px solid rgba(255, 255, 255, 25);
+    selection-background-color: rgb(100, 90, 200);
+    outline: none;
+}
+
+/* === Labels === */
+QLabel {
+    background: transparent;
+    color: rgb(250, 250, 250);
+}
+
+/* === Splitters === */
+QSplitter::handle {
+    background-color: rgba(255, 255, 255, 15);
+}
+
+QSplitter::handle:horizontal {
+    width: 2px;
+}
+
+QSplitter::handle:vertical {
+    height: 2px;
+}
+
+QSplitter::handle:hover {
+    background-color: rgb(100, 90, 200);
+}
+
+/* === Scrollbars === */
+QScrollBar:vertical {
+    background-color: rgb(33, 33, 37);
+    width: 10px;
+    border: none;
+}
+
+QScrollBar::handle:vertical {
+    background-color: rgb(62, 62, 62);
+    border-radius: 5px;
+    min-height: 24px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background-color: rgb(100, 90, 200);
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0;
+}
+
+QScrollBar:horizontal {
+    background-color: rgb(33, 33, 37);
+    height: 10px;
+    border: none;
+}
+
+QScrollBar::handle:horizontal {
+    background-color: rgb(62, 62, 62);
+    border-radius: 5px;
+    min-width: 24px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background-color: rgb(100, 90, 200);
+}
+
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    width: 0;
+}
+
+/* === Status Bar === */
+QStatusBar {
+    background-color: rgb(33, 33, 37);
+    border-top: 1px solid rgba(255, 255, 255, 25);
+    color: rgb(174, 174, 174);
+}
+
+/* === Tooltips === */
+QToolTip {
+    background-color: rgb(46, 46, 46);
+    color: rgb(250, 250, 250);
+    border: 1px solid rgba(255, 255, 255, 25);
+    border-radius: 4px;
+    padding: 4px 8px;
+}
+
+/* === Dialog Boxes === */
+QDialog {
+    background-color: rgb(33, 33, 37);
+}
+
+QMessageBox {
+    background-color: rgb(33, 33, 37);
+}
+
+QInputDialog {
+    background-color: rgb(33, 33, 37);
+}

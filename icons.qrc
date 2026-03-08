@@ -1,4 +1,7 @@
 <RCC>
+    <qresource prefix="/themes">
+        <file>dark-theme.qss</file>
+    </qresource>
     <qresource prefix="/icons">
         <file>icons/7-days-to-die.png</file>
         <file>icons/alien-swarm.png</file>
