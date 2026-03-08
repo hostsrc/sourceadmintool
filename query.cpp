@@ -424,6 +424,22 @@ InfoReply::InfoReply(QByteArray response, qint64 ping)
 
             data >> this->vac;
             data >> this->bots;
+
+            // GoldSrc A2S_INFO doesn't include AppID, map mod folder to AppID
+            static const QMap<QString, int> goldsrcModMap = {
+                {"cstrike", 10},       // Counter-Strike 1.6
+                {"czero", 80},         // Counter-Strike: Condition Zero
+                {"dod", 30},           // Day of Defeat
+                {"dmc", 40},           // Deathmatch Classic
+                {"tfc", 20},           // Team Fortress Classic
+                {"valve", 70},         // Half-Life
+                {"gearbox", 50},       // Opposing Force
+                {"ricochet", 60},      // Ricochet
+                {"bshift", 130},       // Blue Shift
+                {"svencoop", 225840},  // Sven Co-op
+            };
+            if (goldsrcModMap.contains(this->mod))
+                this->appId = goldsrcModMap.value(this->mod);
         }
     }
 }
