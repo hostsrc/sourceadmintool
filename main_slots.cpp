@@ -5,6 +5,7 @@
 #include "serverinfo.h"
 #include "settings.h"
 #include "updatechecker.h"
+#include "serverbrowser.h"
 #include "version.h"
 #include <QMessageBox>
 #include <QInputDialog>
@@ -42,6 +43,7 @@ void MainWindow::ConnectSlots()
     this->ui->actionSet_Query_Interval->connect(this->ui->actionSet_Query_Interval, &QAction::triggered, this, &MainWindow::showQueryIntervalEntry);
     this->ui->actionCheck_Updates->connect(this->ui->actionCheck_Updates, &QAction::triggered, this, &MainWindow::checkForUpdates);
     this->ui->actionSet_Update_URL->connect(this->ui->actionSet_Update_URL, &QAction::triggered, this, &MainWindow::showUpdateUrlEntry);
+    this->ui->actionSet_Steam_API_Key->connect(this->ui->actionSet_Steam_API_Key, &QAction::triggered, this, &MainWindow::showSteamApiKeyEntry);
     this->ui->actionAbout->connect(this->ui->actionAbout, &QAction::triggered, this, &MainWindow::showAbout);
     this->ui->browserTable->connect(this->ui->browserTable, &QTableWidget::itemSelectionChanged, this, &MainWindow::browserTableItemSelected);
     this->ui->rconShow->connect(this->ui->rconShow, &QCheckBox::clicked, this, &MainWindow::showRconClicked);
@@ -599,6 +601,23 @@ void MainWindow::showUpdateUrlEntry()
     if(ok)
     {
         m_updateChecker->setUpdateUrl(url);
+        settings->SaveSettings();
+    }
+}
+
+void MainWindow::showSteamApiKeyEntry()
+{
+    bool ok;
+    QString key = QInputDialog::getText(this, tr("Steam API Key"),
+        tr("Enter your Steam Web API key.\n"
+           "Get one free at: https://steamcommunity.com/dev/apikey"),
+        QLineEdit::Normal,
+        m_serverBrowser->apiKey(), &ok,
+        Qt::WindowSystemMenuHint | Qt::WindowTitleHint);
+
+    if(ok)
+    {
+        m_serverBrowser->setApiKey(key);
         settings->SaveSettings();
     }
 }

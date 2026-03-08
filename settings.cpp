@@ -4,6 +4,7 @@
 #include "rcon.h"
 #include "simplecrypt.h"
 #include "updatechecker.h"
+#include "serverbrowser.h"
 #include "util.h"
 #include <QImage>
 #include <QMap>
@@ -175,6 +176,9 @@ void Settings::ReadSettings()
     if(pMain->GetUpdateChecker())
         pMain->GetUpdateChecker()->setUpdateUrl(pSettings->value("updateUrl", DEFAULT_UPDATE_URL).toString());
 
+    if(pMain->GetServerBrowser())
+        pMain->GetServerBrowser()->setApiKey(pSettings->value("steamApiKey", "").toString());
+
     bool hideOffline = pSettings->value("hideOffline", false).toBool();
     pMain->GetHideOfflineCheck()->setChecked(hideOffline);
 
@@ -269,6 +273,9 @@ void Settings::SaveSettings()
 
     if(pMain->GetUpdateChecker())
         pSettings->setValue("updateUrl", pMain->GetUpdateChecker()->updateUrl());
+
+    if(pMain->GetServerBrowser())
+        pSettings->setValue("steamApiKey", pMain->GetServerBrowser()->apiKey());
 
     pSettings->beginGroup("servers");
 

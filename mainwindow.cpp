@@ -3,6 +3,7 @@
 #include "customitems.h"
 #include "settings.h"
 #include "updatechecker.h"
+#include "serverbrowser.h"
 #include <QKeyEvent>
 #include <QTimer>
 #include <QHBoxLayout>
@@ -84,6 +85,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
     m_updateChecker = new UpdateChecker(this);
     m_updateChecker->checkForUpdates();
+
+    // Set up server browser in the Browse tab
+    m_serverBrowser = new ServerBrowser(this, ui->browseContainer);
+    QVBoxLayout *browseLayout = new QVBoxLayout(ui->browseContainer);
+    browseLayout->setContentsMargins(0, 0, 0, 0);
+    browseLayout->addWidget(m_serverBrowser);
 }
 
 MainWindow::~MainWindow()

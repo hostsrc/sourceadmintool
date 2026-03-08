@@ -56,6 +56,7 @@ set(SOURCES
     loghandler_slots.cpp
     util.cpp
     updatechecker.cpp
+    serverbrowser.cpp
 )
 
 set(HEADERS
@@ -70,6 +71,7 @@ set(HEADERS
     loghandler.h
     util.h
     updatechecker.h
+    serverbrowser.h
 )
 
 set(FORMS mainwindow.ui)

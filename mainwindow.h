@@ -19,6 +19,7 @@
 
 class ServerTableIndexItem;
 class UpdateChecker;
+class ServerBrowser;
 
 enum AddServerError
 {
@@ -121,6 +122,7 @@ public:
     Ui::MainWindow *GetUi(){return ui;}
     QCheckBox *GetHideOfflineCheck(){return hideOfflineCheck;}
     UpdateChecker *GetUpdateChecker(){return m_updateChecker;}
+    ServerBrowser *GetServerBrowser(){return m_serverBrowser;}
     void UpdateGroupComboBox();
     void UpdateGroupColumn(int row, ServerInfo *info);
     ~MainWindow();
@@ -146,6 +148,7 @@ public slots:
     void showQueryIntervalEntry();
     void checkForUpdates();
     void showUpdateUrlEntry();
+    void showSteamApiKeyEntry();
     void showAbout();
     void AddRconHistory(QString cmd);
     void AddChatHistory(QString txt);
@@ -203,5 +206,6 @@ private:
     QMutableListIterator<QString> *sayIter;
     uint8_t sayIterDirection;
     UpdateChecker *m_updateChecker;
+    ServerBrowser *m_serverBrowser;
 };
 #endif // MAINWINDOW_H

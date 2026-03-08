@@ -572,6 +572,16 @@
          </item>
         </layout>
        </widget>
+       <widget class="QWidget" name="browseTab">
+        <attribute name="title">
+         <string>Browse</string>
+        </attribute>
+        <layout class="QGridLayout" name="gridLayout_5">
+         <item row="0" column="0">
+          <widget class="QWidget" name="browseContainer" native="true"/>
+         </item>
+        </layout>
+       </widget>
       </widget>
      </widget>
     </item>
@@ -613,6 +623,7 @@
     <addaction name="actionSet_Log_Port"/>
     <addaction name="actionSet_Query_Retries"/>
     <addaction name="actionSet_Query_Interval"/>
+    <addaction name="actionSet_Steam_API_Key"/>
     <addaction name="separator"/>
     <addaction name="actionSet_Update_URL"/>
     <addaction name="actionCheck_Updates"/>
@@ -673,6 +684,11 @@
   <action name="actionAbout">
    <property name="text">
     <string>About</string>
+   </property>
+  </action>
+  <action name="actionSet_Steam_API_Key">
+   <property name="text">
+    <string>Set Steam API Key</string>
    </property>
   </action>
  </widget>
