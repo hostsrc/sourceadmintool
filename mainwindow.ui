@@ -612,6 +612,7 @@
     <addaction name="actionDark_Theme"/>
     <addaction name="actionSet_Log_Port"/>
     <addaction name="actionSet_Query_Retries"/>
+    <addaction name="actionSet_Query_Interval"/>
     <addaction name="separator"/>
     <addaction name="actionSet_Update_URL"/>
     <addaction name="actionCheck_Updates"/>
@@ -652,6 +653,11 @@
   <action name="actionSet_Query_Retries">
    <property name="text">
     <string>Set Query Retries</string>
+   </property>
+  </action>
+  <action name="actionSet_Query_Interval">
+   <property name="text">
+    <string>Set Query Interval</string>
    </property>
   </action>
   <action name="actionSet_Update_URL">

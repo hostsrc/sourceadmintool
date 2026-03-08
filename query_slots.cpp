@@ -14,14 +14,14 @@ extern QList<ServerInfo *> serverList;
 QColor errorColor(255, 60, 60);
 QColor queryingColor(80, 170, 80);
 
-#define UPDATE_TIME 15
+int g_queryInterval = QUERY_INTERVAL_DEFAULT;
 
 //TIMER TRIGGERED UPDATING
 void MainWindow::TimedUpdate()
 {
     static int run = 1;
 
-    if(run % UPDATE_TIME == 0)
+    if(run % g_queryInterval == 0)
     {
         for(int i = 0; i < this->ui->browserTable->rowCount(); i++)
         {
@@ -174,7 +174,7 @@ void MainWindow::CreateTableItemOrUpdate(size_t row, size_t col, QTableWidget *t
                 else if(info->queryState == QueryFailed)
                 {
                     item->setForeground(errorColor);
-                    item->setText(QString("Failed to query %1, retrying in %2 seconds").arg(info->hostPort, QString::number(UPDATE_TIME)));
+                    item->setText(QString("Failed to query %1, retrying in %2 seconds").arg(info->hostPort, QString::number(g_queryInterval)));
                 }
                 else if(info->queryState == QueryRunning)
                 {

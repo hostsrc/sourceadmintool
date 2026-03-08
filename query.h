@@ -9,8 +9,10 @@
 
 #define QUERY_TIMEOUT 2000
 #define QUERY_MAX_RETRIES_DEFAULT 1
+#define QUERY_INTERVAL_DEFAULT 15
 
 extern int g_queryMaxRetries;
+extern int g_queryInterval;
 
 #define A2S_HEADER  0xFFFFFFFF
 

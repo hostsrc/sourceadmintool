@@ -39,6 +39,7 @@ void MainWindow::ConnectSlots()
     this->ui->actionDark_Theme->connect(this->ui->actionDark_Theme, &QAction::triggered, this, &MainWindow::darkThemeTriggered);
     this->ui->actionSet_Log_Port->connect(this->ui->actionSet_Log_Port, &QAction::triggered, this, &MainWindow::showPortEntry);
     this->ui->actionSet_Query_Retries->connect(this->ui->actionSet_Query_Retries, &QAction::triggered, this, &MainWindow::showQueryRetriesEntry);
+    this->ui->actionSet_Query_Interval->connect(this->ui->actionSet_Query_Interval, &QAction::triggered, this, &MainWindow::showQueryIntervalEntry);
     this->ui->actionCheck_Updates->connect(this->ui->actionCheck_Updates, &QAction::triggered, this, &MainWindow::checkForUpdates);
     this->ui->actionSet_Update_URL->connect(this->ui->actionSet_Update_URL, &QAction::triggered, this, &MainWindow::showUpdateUrlEntry);
     this->ui->actionAbout->connect(this->ui->actionAbout, &QAction::triggered, this, &MainWindow::showAbout);
@@ -566,6 +567,18 @@ void MainWindow::showQueryRetriesEntry()
     if(ok)
     {
         g_queryMaxRetries = retries;
+        settings->SaveSettings();
+    }
+}
+
+void MainWindow::showQueryIntervalEntry()
+{
+    bool ok;
+    int interval = QInputDialog::getInt(this, tr("Query Interval"), tr("Server refresh interval in seconds (5-300)"), g_queryInterval, 5, 300, 1, &ok, Qt::WindowSystemMenuHint | Qt::WindowTitleHint);
+
+    if(ok)
+    {
+        g_queryInterval = interval;
         settings->SaveSettings();
     }
 }

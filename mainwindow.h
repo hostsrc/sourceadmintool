@@ -143,6 +143,7 @@ public slots:
     void darkThemeTriggered();
     void showPortEntry();
     void showQueryRetriesEntry();
+    void showQueryIntervalEntry();
     void checkForUpdates();
     void showUpdateUrlEntry();
     void showAbout();

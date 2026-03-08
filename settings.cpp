@@ -168,6 +168,10 @@ void Settings::ReadSettings()
     if(g_queryMaxRetries < 0) g_queryMaxRetries = 0;
     if(g_queryMaxRetries > 5) g_queryMaxRetries = 5;
 
+    g_queryInterval = pSettings->value("queryInterval", QUERY_INTERVAL_DEFAULT).toInt();
+    if(g_queryInterval < 5) g_queryInterval = 5;
+    if(g_queryInterval > 300) g_queryInterval = 300;
+
     if(pMain->GetUpdateChecker())
         pMain->GetUpdateChecker()->setUpdateUrl(pSettings->value("updateUrl", DEFAULT_UPDATE_URL).toString());
 
@@ -261,6 +265,7 @@ void Settings::SaveSettings()
     pSettings->setValue("hideOffline", pMain->GetHideOfflineCheck()->isChecked());
 
     pSettings->setValue("queryMaxRetries", g_queryMaxRetries);
+    pSettings->setValue("queryInterval", g_queryInterval);
 
     if(pMain->GetUpdateChecker())
         pSettings->setValue("updateUrl", pMain->GetUpdateChecker()->updateUrl());
