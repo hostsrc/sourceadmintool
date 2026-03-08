@@ -140,6 +140,7 @@ public slots:
     void RconOutput(ServerInfo *info, QByteArray res);
     void darkThemeTriggered();
     void showPortEntry();
+    void showQueryRetriesEntry();
     void showAbout();
     void AddRconHistory(QString cmd);
     void AddChatHistory(QString txt);

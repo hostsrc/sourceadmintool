@@ -11,6 +11,8 @@
 #include <QXmlStreamReader>
 #include <QRandomGenerator>
 
+extern int g_queryMaxRetries;
+
 QMap<int, QString> appIDMap;
 Settings *settings;
 QList<ServerInfo *> serverList;
@@ -161,6 +163,10 @@ void Settings::ReadSettings()
         pMain->darkThemeTriggered();
     }
 
+    g_queryMaxRetries = pSettings->value("queryMaxRetries", QUERY_MAX_RETRIES_DEFAULT).toInt();
+    if(g_queryMaxRetries < 0) g_queryMaxRetries = 0;
+    if(g_queryMaxRetries > 5) g_queryMaxRetries = 5;
+
     bool hideOffline = pSettings->value("hideOffline", false).toBool();
     pMain->GetHideOfflineCheck()->setChecked(hideOffline);
 
@@ -249,6 +255,8 @@ void Settings::SaveSettings()
     pSettings->setValue("showRCONpass", pMain->GetUi()->rconShow->isChecked());
 
     pSettings->setValue("hideOffline", pMain->GetHideOfflineCheck()->isChecked());
+
+    pSettings->setValue("queryMaxRetries", g_queryMaxRetries);
 
     pSettings->beginGroup("servers");
 

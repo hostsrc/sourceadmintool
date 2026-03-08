@@ -611,6 +611,7 @@
     </property>
     <addaction name="actionDark_Theme"/>
     <addaction name="actionSet_Log_Port"/>
+    <addaction name="actionSet_Query_Retries"/>
     <addaction name="actionAbout"/>
    </widget>
    <addaction name="menuFile"/>
@@ -643,6 +644,11 @@
   <action name="actionSet_Log_Port">
    <property name="text">
     <string>Set Log Port</string>
+   </property>
+  </action>
+  <action name="actionSet_Query_Retries">
+   <property name="text">
+    <string>Set Query Retries</string>
    </property>
   </action>
   <action name="actionAbout">

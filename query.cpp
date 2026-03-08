@@ -7,6 +7,8 @@ const qint32 k_nAppIDTheShip = 2400;
 const qint32 k_nAppIDKillingFloor = 1250;
 const qint32 k_nAppIDKillingFloor2 = 232090;
 
+int g_queryMaxRetries = QUERY_MAX_RETRIES_DEFAULT;
+
 QString GetStringFromStream(QDataStream &stream)
 {
     qint64 pos = stream.device()->pos();
@@ -118,6 +120,9 @@ QByteArray SendUDPQuery(QByteArray query, QHostAddress host, quint16 port, bool 
 
         if(socket.isValid())
         {
+            int retries = 0;
+            while(retries <= g_queryMaxRetries)
+            {
             if(socket.write(query) != -1 && socket.waitForReadyRead(QUERY_TIMEOUT))
             {
                 QByteArray reply;
@@ -130,8 +135,58 @@ QByteArray SendUDPQuery(QByteArray query, QHostAddress host, quint16 port, bool 
                 qint32 header;
                 response >> header;
 
+                // Handle challenge-response on the SAME socket
+                // Challenge is tied to source IP:port, so we must reuse the socket
                 if(header == -1)
                 {
+                    qint8 check;
+                    response >> check;
+
+                    if(check == 0x41 && reply.size() >= 9) // Challenge response
+                    {
+                        qint32 challenge;
+                        response >> challenge;
+
+                        // Build challenge query: replace trailing -1 with challenge,
+                        // or append challenge if query doesn't end with -1
+                        QByteArray challengeQuery = query;
+                        if(challengeQuery.size() >= 4)
+                        {
+                            // Check if last 4 bytes are -1 (0xFFFFFFFF) = player/rules style
+                            QDataStream tailCheck(challengeQuery.right(4));
+                            tailCheck.setByteOrder(QDataStream::LittleEndian);
+                            qint32 tail;
+                            tailCheck >> tail;
+                            if(tail == -1)
+                            {
+                                // Replace the -1 with the challenge value
+                                challengeQuery.chop(4);
+                            }
+                        }
+                        QDataStream challengeData(&challengeQuery, QIODevice::WriteOnly | QIODevice::Append);
+                        challengeData.setByteOrder(QDataStream::LittleEndian);
+                        challengeData << challenge;
+
+                        if(socket.write(challengeQuery) != -1 && socket.waitForReadyRead(QUERY_TIMEOUT))
+                        {
+                            reply.resize(socket.pendingDatagramSize());
+                            socket.readDatagram(reply.data(), reply.size());
+
+                            QDataStream response2(reply);
+                            response2.setByteOrder(QDataStream::LittleEndian);
+                            response2 >> header;
+                        }
+                        else
+                        {
+                            retries++;
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        // Not a challenge, rewind and return the full reply
+                    }
+
                     socket.close();
                     return reply;
                 }
@@ -268,6 +323,8 @@ QByteArray SendUDPQuery(QByteArray query, QHostAddress host, quint16 port, bool 
                     }
                 }
             }
+            retries++;
+            } // retry loop
             socket.close();
         }
 
@@ -477,31 +534,7 @@ InfoReply *GetInfoReply(QHostAddress host, quint16 port)
         ping = 2000;
     }
 
-    // The A2S_INFO request was changed to require a challenge value
-    // like the other two query types in November 2020.
-    // If we receive a challenge response instead of the server info,
-    // resend the request with the received challenge value.
-    if(byteResponse.size() >= 9)
-    {
-        QDataStream response(byteResponse);
-        response.setByteOrder(QDataStream::LittleEndian);
-
-        qint32 header;
-        qint8 check;
-
-        response >> header;
-        response >> check;
-
-        if(header == -1 && check == A2S_INFO_CHALLENGE_CHECK)
-        {
-            qint32 challenge;
-            response >> challenge;
-
-            data << challenge;
-
-            byteResponse = SendUDPQuery(query, host, port);
-        }
-    }
+    // Challenge-response is now handled inside SendUDPQuery on the same socket
 
     return new InfoReply(byteResponse, ping);
 }
@@ -543,46 +576,24 @@ QList<PlayerInfo> *GetPlayerReply(QHostAddress host, quint16 port, bool goldsrcS
     qint32 header;
     qint8 byteCheck;
 
+    // Challenge-response is now handled inside SendUDPQuery on the same socket
+    response.setFloatingPointPrecision(QDataStream::SinglePrecision);
     response >> header;
     response >> byteCheck;
 
-    if(header == -1 && (byteCheck == A2S_PLAYER_CHALLENGE_CHECK || byteCheck == A2S_PLAYER_CHECK))
+    if(header == -1 && byteCheck == A2S_PLAYER_CHECK)
     {
-        if(byteCheck == A2S_PLAYER_CHALLENGE_CHECK)
+        quint8 count;
+        response >> count;
+
+        for(int i = 0; i < count; i++)
         {
-            qint32 challenge;
-            response >> challenge;
-
-            data.device()->reset();
-            data << A2S_HEADER << (qint8)A2S_PLAYER << challenge;
-
-            byteResponse = SendUDPQuery(query, host, port, goldsrcSplits);
-        }
-        QDataStream playerResponse(byteResponse);
-
-        playerResponse.setFloatingPointPrecision(QDataStream::SinglePrecision);
-        playerResponse.setByteOrder(QDataStream::LittleEndian);
-
-        playerResponse >> header;
-
-        if(header == -1)
-        {
-            playerResponse >> byteCheck;
-            if(byteCheck == A2S_PLAYER_CHECK)
-            {
-                quint8 count;
-                playerResponse >> count;
-
-                for(int i = 0; i < count; i++)
-                {
-                    PlayerInfo playerInfo;
-                    playerResponse >> byteCheck;
-                    playerInfo.name = GetStringFromStream(playerResponse);
-                    playerResponse >> playerInfo.score;
-                    playerResponse >> playerInfo.time;
-                    list->append(playerInfo);
-                }
-            }
+            PlayerInfo playerInfo;
+            response >> byteCheck;
+            playerInfo.name = GetStringFromStream(response);
+            response >> playerInfo.score;
+            response >> playerInfo.time;
+            list->append(playerInfo);
         }
     }
     return list;
@@ -625,37 +636,21 @@ QList<RulesInfo> *GetRulesReply(QHostAddress host, quint16 port, bool goldsrcSpl
     qint32 header;
     qint8 byteCheck;
 
+    // Challenge-response is now handled inside SendUDPQuery on the same socket
     response >> header;
     response >> byteCheck;
-
-    if(header == -1 && byteCheck == A2S_RULES_CHALLENGE_CHECK)
-    {
-        qint32 challenge;
-        response >> challenge;
-
-        data.device()->reset();
-        data << A2S_HEADER << (qint8)A2S_RULES << challenge;
-
-        byteResponse = SendUDPQuery(query, host, port, goldsrcSplits);
-    }
-
-    QDataStream rulesResponse(byteResponse);
-    rulesResponse.setByteOrder(QDataStream::LittleEndian);
-
-    rulesResponse >> header;
-    rulesResponse >> byteCheck;
 
     if(header == -1 && byteCheck == A2S_RULES_CHECK)
     {
         quint16 count;
-        rulesResponse >> count;
+        response >> count;
 
         QString name;
         QString value;
         for(int i = 0; i < count; i++)
         {
-            name = GetStringFromStream(rulesResponse);
-            value = GetStringFromStream(rulesResponse);
+            name = GetStringFromStream(response);
+            value = GetStringFromStream(response);
             list->append(RulesInfo(name, value));
             name = "";
             value = "";

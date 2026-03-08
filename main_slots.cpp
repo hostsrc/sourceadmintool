@@ -36,6 +36,7 @@ void MainWindow::ConnectSlots()
     this->ui->actionBatch_Add_Servers->connect(this->ui->actionBatch_Add_Servers, &QAction::triggered, this, &MainWindow::batchAddServerEntry);
     this->ui->actionDark_Theme->connect(this->ui->actionDark_Theme, &QAction::triggered, this, &MainWindow::darkThemeTriggered);
     this->ui->actionSet_Log_Port->connect(this->ui->actionSet_Log_Port, &QAction::triggered, this, &MainWindow::showPortEntry);
+    this->ui->actionSet_Query_Retries->connect(this->ui->actionSet_Query_Retries, &QAction::triggered, this, &MainWindow::showQueryRetriesEntry);
     this->ui->actionAbout->connect(this->ui->actionAbout, &QAction::triggered, this, &MainWindow::showAbout);
     this->ui->browserTable->connect(this->ui->browserTable, &QTableWidget::itemSelectionChanged, this, &MainWindow::browserTableItemSelected);
     this->ui->rconShow->connect(this->ui->rconShow, &QCheckBox::clicked, this, &MainWindow::showRconClicked);
@@ -549,6 +550,18 @@ void MainWindow::showPortEntry()
     if(ok)
     {
         this->u16logPort = port;
+        settings->SaveSettings();
+    }
+}
+
+void MainWindow::showQueryRetriesEntry()
+{
+    bool ok;
+    int retries = QInputDialog::getInt(this, tr("Query Retries"), tr("Max retries per query (0-5)"), g_queryMaxRetries, 0, 5, 1, &ok, Qt::WindowSystemMenuHint | Qt::WindowTitleHint);
+
+    if(ok)
+    {
+        g_queryMaxRetries = retries;
         settings->SaveSettings();
     }
 }

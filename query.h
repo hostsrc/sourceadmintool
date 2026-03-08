@@ -8,6 +8,9 @@
 #include <QTableWidgetItem>
 
 #define QUERY_TIMEOUT 2000
+#define QUERY_MAX_RETRIES_DEFAULT 1
+
+extern int g_queryMaxRetries;
 
 #define A2S_HEADER  0xFFFFFFFF
 
