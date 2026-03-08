@@ -9,6 +9,7 @@
 #include <QPalette>
 #include <QSignalMapper>
 #include <QDesktopServices>
+#include <QWidgetAction>
 
 #define STEAMID_COLUMN 4
 #define NAME_COLUMN 1
@@ -38,6 +39,10 @@ void MainWindow::ConnectSlots()
     this->ui->rconShow->connect(this->ui->rconShow, &QCheckBox::clicked, this, &MainWindow::showRconClicked);
     this->ui->playerTable->connect(this->ui->playerTable, &QTableWidget::customContextMenuRequested, this, &MainWindow::customPlayerContextMenu);
     this->ui->browserTable->connect(this->ui->browserTable, &QTableWidget::customContextMenuRequested, this, &MainWindow::serverBrowserContextMenu);
+
+    connect(this->filterEdit, &QLineEdit::textChanged, this, &MainWindow::filterTextChanged);
+    connect(this->hideOfflineCheck, &QCheckBox::toggled, this, &MainWindow::hideOfflineToggled);
+    connect(this->groupFilterCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::groupFilterChanged);
 }
 
 QString CreateCommand(QString command, QString subValue, ContextTypes type, QString name, QString SteamID)
@@ -189,6 +194,34 @@ void MainWindow::serverBrowserContextMenu(const QPoint &pos)
         QAction *con = new QAction("Connect", pContextMenu);
         con->connect(con, &QAction::triggered, this, [this]{connectToServer();}, Qt::QueuedConnection);
         pContextMenu->addAction(con);
+
+        pContextMenu->addSeparator();
+
+        //Add set group action
+        ServerTableIndexItem *id = this->GetServerTableIndexItem(row);
+        if(id)
+        {
+            ServerInfo *info = id->GetServerInfo();
+            QAction *setGroup = new QAction(info->group.isEmpty() ? "Set Group..." : QString("Group: %1 (Change...)").arg(info->group), pContextMenu);
+            setGroup->connect(setGroup, &QAction::triggered, this, [this, info]{
+                bool ok;
+                QString group = QInputDialog::getText(this, tr("Set Server Group"), tr("Group name (leave empty to remove):"), QLineEdit::Normal, info->group, &ok, Qt::WindowSystemMenuHint | Qt::WindowTitleHint);
+                if(ok)
+                {
+                    this->SetServerGroup(info, group.trimmed());
+                }
+            });
+            pContextMenu->addAction(setGroup);
+
+            if(!info->group.isEmpty())
+            {
+                QAction *removeGroup = new QAction("Remove from Group", pContextMenu);
+                removeGroup->connect(removeGroup, &QAction::triggered, this, [this, info]{
+                    this->SetServerGroup(info, "");
+                });
+                pContextMenu->addAction(removeGroup);
+            }
+        }
     }
     pContextMenu->connect(pContextMenu, &QMenu::aboutToHide, this, &MainWindow::hideContextMenu);
     pContextMenu->exec(globalpos);
@@ -410,4 +443,20 @@ void MainWindow::AddChatHistory(QString txt)
     this->sayHistory.prepend(txt);
     this->sayIter->toFront();
     this->sayIterDirection = kIterInit;
+}
+
+void MainWindow::filterTextChanged(const QString &)
+{
+    this->ApplyBrowserFilter();
+}
+
+void MainWindow::hideOfflineToggled(bool)
+{
+    this->ApplyBrowserFilter();
+    settings->SaveSettings();
+}
+
+void MainWindow::groupFilterChanged(int)
+{
+    this->ApplyBrowserFilter();
 }

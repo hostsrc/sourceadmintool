@@ -96,6 +96,7 @@ public:
     QueryState queryState;
     quint8 currentPlayers;
     quint8 maxPlayers;
+    QString group;
 };
 
 class HostQueryResult : public QObject

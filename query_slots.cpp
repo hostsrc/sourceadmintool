@@ -483,6 +483,7 @@ void MainWindow::ServerInfoReady(InfoReply *reply, ServerTableIndexItem *indexCe
             delete reply;
     }
     this->UpdateInfoTable(info, (row == this->ui->browserTable->currentRow()));
+    this->ApplyBrowserFilter();
 }
 
 void MainWindow::PlayerInfoReady(QList<PlayerInfo> *list, ServerTableIndexItem *indexCell)

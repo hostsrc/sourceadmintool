@@ -158,21 +158,24 @@ void Settings::ReadSettings()
         pMain->darkThemeTriggered();
     }
 
+    bool hideOffline = pSettings->value("hideOffline", false).toBool();
+    pMain->GetHideOfflineCheck()->setChecked(hideOffline);
+
     pSettings->beginGroup("servers");
     QStringList keys = pSettings->childKeys();
 
     for(int i = 1; i <= keys.size(); i++)
-    {   
+    {
         QStringList list = pSettings->value(QString::number(i), QStringList()).toStringList();
 
-        if(list.size() == 0 || list.size() > 2)
+        if(list.size() == 0 || list.size() > 3)
         {
             continue;
         }
 
         ServerInfo *info = pMain->AddServerToList(list.at(0));
 
-        if(info && list.size() == 2)
+        if(info && list.size() >= 2 && !list.at(1).isEmpty())
         {
             SimpleCrypt encrypt;
             encrypt.setKey(list.at(0).toLongLong());
@@ -183,8 +186,14 @@ void Settings::ReadSettings()
                 info->saveRcon = true;
             }
         }
+
+        if(info && list.size() >= 3)
+        {
+            info->group = list.at(2);
+        }
     }
     pSettings->endGroup();
+    pMain->UpdateGroupComboBox();
     this->SaveSettings();//Call this again to make sure we cleaned up any garbage entries
 }
 
@@ -215,6 +224,8 @@ void Settings::SaveSettings()
 
     pSettings->setValue("showRCONpass", pMain->GetUi()->rconShow->isChecked());
 
+    pSettings->setValue("hideOffline", pMain->GetHideOfflineCheck()->isChecked());
+
     pSettings->beginGroup("servers");
 
     pSettings->remove("");
@@ -232,8 +243,18 @@ void Settings::SaveSettings()
                 SimpleCrypt encrypt;
                 encrypt.setKey(info->hostPort.toLongLong());
                 list.append(encrypt.encryptToString(info->rconPassword));
-
             }
+            else if(!info->group.isEmpty())
+            {
+                // Need a placeholder for password slot when we have a group
+                list.append("");
+            }
+
+            if(!info->group.isEmpty())
+            {
+                list.append(info->group);
+            }
+
             pSettings->setValue(QString::number(i+1), list);
         }
     }

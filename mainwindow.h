@@ -8,6 +8,9 @@
 #include <QHostAddress>
 #include <QTableWidget>
 #include <QMutableListIterator>
+#include <QLineEdit>
+#include <QCheckBox>
+#include <QComboBox>
 #include "query.h"
 #include "serverinfo.h"
 #include "loghandler.h"
@@ -112,6 +115,8 @@ public:
     void CreateTableItemOrUpdate(size_t row, size_t col, QTableWidget *table, ServerInfo *info);
     ServerTableIndexItem *GetServerTableIndexItem(size_t row);
     Ui::MainWindow *GetUi(){return ui;}
+    QCheckBox *GetHideOfflineCheck(){return hideOfflineCheck;}
+    void UpdateGroupComboBox();
     ~MainWindow();
     void parseLogLine(QString, ServerInfo *);
     PlayerQuery *pPlayerQuery;
@@ -150,6 +155,9 @@ private slots:
     void hideContextMenu();
     void playerContextMenuAction(const QString &cmd);
     void serverBrowserContextMenu(const QPoint &pos);
+    void filterTextChanged(const QString &text);
+    void hideOfflineToggled(bool checked);
+    void groupFilterChanged(int index);
 
 
 private:
@@ -168,7 +176,12 @@ private:
     void rconLoginQueued(QList<QueuedCommand>);
     bool deleteServerDialog();
     void connectToServer();
+    void ApplyBrowserFilter();
+    void SetServerGroup(ServerInfo *info, const QString &group);
     LogHandler *pLogHandler;
+    QLineEdit *filterEdit;
+    QCheckBox *hideOfflineCheck;
+    QComboBox *groupFilterCombo;
     QList<QString> commandHistory;
     QList<QString> sayHistory;
     QMutableListIterator<QString> *commandIter;

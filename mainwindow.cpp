@@ -4,6 +4,8 @@
 #include "settings.h"
 #include <QKeyEvent>
 #include <QTimer>
+#include <QHBoxLayout>
+#include <QLabel>
 
 extern Settings *settings;
 extern QList<ServerInfo *> serverList;
@@ -21,6 +23,32 @@ MainWindow::MainWindow(QWidget *parent) :
     sayIter = new QMutableListIterator<QString>(this->sayHistory);
     sayIterDirection = kIterInit;
     this->ui->commandOutput->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+
+    // Create filter bar above the main splitter
+    QWidget *filterBar = new QWidget(this);
+    QHBoxLayout *filterLayout = new QHBoxLayout(filterBar);
+    filterLayout->setContentsMargins(0, 0, 0, 0);
+
+    filterEdit = new QLineEdit(filterBar);
+    filterEdit->setPlaceholderText("Filter servers...");
+    filterEdit->setClearButtonEnabled(true);
+
+    hideOfflineCheck = new QCheckBox("Hide Offline", filterBar);
+
+    QLabel *groupLabel = new QLabel("Group:", filterBar);
+    groupFilterCombo = new QComboBox(filterBar);
+    groupFilterCombo->setMinimumWidth(120);
+    groupFilterCombo->addItem("All Groups");
+
+    filterLayout->addWidget(filterEdit, 1);
+    filterLayout->addWidget(hideOfflineCheck);
+    filterLayout->addWidget(groupLabel);
+    filterLayout->addWidget(groupFilterCombo);
+
+    // Insert filter bar into the grid layout at row 0, push splitter to row 1
+    QGridLayout *grid = qobject_cast<QGridLayout *>(ui->centralWidget->layout());
+    grid->addWidget(filterBar, 0, 0);
+    grid->addWidget(ui->splitter, 1, 0);
 
     this->SetRconEnabled(false);
     settings = new Settings(this);
@@ -189,4 +217,88 @@ QColor MainWindow::GetTextColor()
     {
         return Qt::black;
     }
+}
+
+void MainWindow::ApplyBrowserFilter()
+{
+    QString filterText = filterEdit->text().trimmed();
+    bool hideOffline = hideOfflineCheck->isChecked();
+    QString selectedGroup = groupFilterCombo->currentIndex() > 0 ? groupFilterCombo->currentText() : QString();
+
+    for(int i = 0; i < this->ui->browserTable->rowCount(); i++)
+    {
+        ServerTableIndexItem *id = this->GetServerTableIndexItem(i);
+        if(!id)
+            continue;
+
+        ServerInfo *info = id->GetServerInfo();
+        bool visible = true;
+
+        // Hide offline servers
+        if(hideOffline && (info->queryState == QueryFailed || info->queryState == QueryResolveFailed))
+        {
+            visible = false;
+        }
+
+        // Filter by group
+        if(visible && !selectedGroup.isEmpty() && info->group != selectedGroup)
+        {
+            visible = false;
+        }
+
+        // Filter by text (match against server name, map, or host:port)
+        if(visible && !filterText.isEmpty())
+        {
+            bool matches = false;
+            // Check hostPort
+            if(info->hostPort.contains(filterText, Qt::CaseInsensitive))
+                matches = true;
+            // Check server name (strip HTML tags for comparison)
+            if(!matches && !info->serverNameRich.isEmpty())
+            {
+                QString plainName = info->serverNameRich;
+                plainName.remove(QRegExp("<[^>]*>"));
+                if(plainName.contains(filterText, Qt::CaseInsensitive))
+                    matches = true;
+            }
+            // Check current map
+            if(!matches && info->currentMap.contains(filterText, Qt::CaseInsensitive))
+                matches = true;
+
+            visible = matches;
+        }
+
+        this->ui->browserTable->setRowHidden(i, !visible);
+    }
+}
+
+void MainWindow::UpdateGroupComboBox()
+{
+    QString current = groupFilterCombo->currentText();
+    groupFilterCombo->blockSignals(true);
+    groupFilterCombo->clear();
+    groupFilterCombo->addItem("All Groups");
+
+    QStringList groups;
+    for(int i = 0; i < serverList.size(); i++)
+    {
+        QString g = serverList.at(i)->group;
+        if(!g.isEmpty() && !groups.contains(g))
+            groups.append(g);
+    }
+    groups.sort();
+    groupFilterCombo->addItems(groups);
+
+    int idx = groupFilterCombo->findText(current);
+    if(idx >= 0)
+        groupFilterCombo->setCurrentIndex(idx);
+    groupFilterCombo->blockSignals(false);
+}
+
+void MainWindow::SetServerGroup(ServerInfo *info, const QString &group)
+{
+    info->group = group;
+    UpdateGroupComboBox();
+    ApplyBrowserFilter();
+    settings->SaveSettings();
 }
