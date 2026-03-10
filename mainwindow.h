@@ -152,6 +152,7 @@ public slots:
     void showAbout();
     void AddRconHistory(QString cmd);
     void AddChatHistory(QString txt);
+    void HostReachabilityReady(bool reachable, ServerTableIndexItem *item);
 
 private slots:
     void addServerEntry();

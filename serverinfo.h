@@ -26,6 +26,8 @@ enum QueryState
     QuerySuccess,
     QueryResolving,
     QueryResolveFailed,
+    QueryOffline,       // Host unreachable (ICMP ping fails)
+    QueryUnreachable,   // Host alive but game server not responding
 };
 
 class PlayerLogInfo

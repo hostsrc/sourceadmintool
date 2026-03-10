@@ -15,6 +15,7 @@
 #include "playerhistorydialog.h"
 #include "maphistorydialog.h"
 #include "latencydialog.h"
+#include "pingcheck.h"
 
 extern QMap<int, QString> appIDMap;
 extern QList<ServerInfo *> serverList;
@@ -198,6 +199,16 @@ void MainWindow::CreateTableItemOrUpdate(size_t row, size_t col, QTableWidget *t
                 {
                     item->setForeground(errorColor);
                     item->setText(QString("Failed to resolve %1...").arg(info->hostPort));
+                }
+                else if(info->queryState == QueryOffline)
+                {
+                    item->setForeground(errorColor);
+                    item->setText(QString("Host unreachable: %1 (network/host down)").arg(info->hostPort));
+                }
+                else if(info->queryState == QueryUnreachable)
+                {
+                    item->setForeground(QColor(255, 165, 0)); // orange
+                    item->setText(QString("Server offline (host up): %1").arg(info->hostPort));
                 }
                 if(bAddItem)
                 {
@@ -553,11 +564,49 @@ void MainWindow::ServerInfoReady(InfoReply *reply, ServerTableIndexItem *indexCe
     else
     {
         info->queryState = QueryFailed;
-         this->CreateTableItemOrUpdate(row, kBrowserColHostname, browserTable, info);
+        this->CreateTableItemOrUpdate(row, kBrowserColHostname, browserTable, info);
+
+        // Trigger ICMP ping check to distinguish offline vs unreachable
+        PingCheck *pingCheck = new PingCheck(this);
+        connect(pingCheck, &PingCheck::finished, this, &MainWindow::HostReachabilityReady);
+        pingCheck->check(info->hostPort, indexCell);
 
         if(reply)
             delete reply;
     }
+    this->UpdateInfoTable(info, (row == this->ui->browserTable->currentRow()));
+    this->ApplyBrowserFilter();
+    this->UpdateStatusBar();
+}
+
+void MainWindow::HostReachabilityReady(bool reachable, ServerTableIndexItem *indexCell)
+{
+    // Find the row for this item
+    int row = -1;
+    for(int i = 0; i < this->ui->browserTable->rowCount(); i++)
+    {
+        if(indexCell == this->GetServerTableIndexItem(i))
+        {
+            row = i;
+            break;
+        }
+    }
+
+    if(row == -1)
+        return;
+
+    ServerInfo *info = indexCell->GetServerInfo();
+
+    // Only update if still in a failed state (not already re-queried successfully)
+    if(info->queryState != QueryFailed && info->queryState != QueryOffline && info->queryState != QueryUnreachable)
+        return;
+
+    if(reachable)
+        info->queryState = QueryUnreachable; // Host alive, server process down
+    else
+        info->queryState = QueryOffline; // Host unreachable
+
+    this->CreateTableItemOrUpdate(row, kBrowserColHostname, this->ui->browserTable, info);
     this->UpdateInfoTable(info, (row == this->ui->browserTable->currentRow()));
     this->ApplyBrowserFilter();
     this->UpdateStatusBar();

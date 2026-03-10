@@ -260,7 +260,8 @@ void MainWindow::ApplyBrowserFilter()
         bool visible = true;
 
         // Hide offline servers
-        if(hideOffline && (info->queryState == QueryFailed || info->queryState == QueryResolveFailed))
+        if(hideOffline && (info->queryState == QueryFailed || info->queryState == QueryResolveFailed
+            || info->queryState == QueryOffline || info->queryState == QueryUnreachable))
         {
             visible = false;
         }
@@ -354,7 +355,8 @@ void MainWindow::UpdateStatusBar()
             totalPlayers += info->currentPlayers;
             totalMaxPlayers += info->maxPlayers;
         }
-        else if(info->queryState == QueryFailed || info->queryState == QueryResolveFailed)
+        else if(info->queryState == QueryFailed || info->queryState == QueryResolveFailed
+                || info->queryState == QueryOffline || info->queryState == QueryUnreachable)
         {
             offline++;
         }
