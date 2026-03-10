@@ -42,11 +42,13 @@ private slots:
     void onRange7D();
     void onRange30D();
     void runTraceroute();
+    void onTracerouteOutput();
     void onTracerouteFinished(int exitCode, QProcess::ExitStatus status);
 
 private:
     void loadData(LatencyGraphWidget::TimeRange range);
     void updateStats(const QList<LatencyRecord> &records);
+    void parseTraceLine(const QString &line);
 
     QString serverKey;
     QString hostAddress;

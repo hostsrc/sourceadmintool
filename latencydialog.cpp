@@ -379,6 +379,10 @@ void LatencyDialog::runTraceroute()
     traceTable->setRowCount(0);
 
     traceProcess = new QProcess(this);
+
+    // Stream output line-by-line as hops come in
+    connect(traceProcess, &QProcess::readyReadStandardOutput,
+            this, &LatencyDialog::onTracerouteOutput);
     connect(traceProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
             this, &LatencyDialog::onTracerouteFinished);
 
@@ -388,121 +392,121 @@ void LatencyDialog::runTraceroute()
         ip = ip.split(":").first();
 
 #ifdef Q_OS_WIN
-    traceProcess->start("tracert", {"-d", "-w", "2000", ip});
+    traceProcess->start("tracert", {"-d", "-w", "1000", ip});
 #else
-    // Use traceroute (always available on macOS/Linux)
-    traceProcess->start("traceroute", {"-n", "-w", "2", "-q", "3", ip});
+    // -n: no DNS, -w 1: 1s timeout per probe, -q 1: single probe per hop, -m 20: max 20 hops
+    traceProcess->start("traceroute", {"-n", "-w", "1", "-q", "1", "-m", "20", ip});
 #endif
+}
+
+void LatencyDialog::onTracerouteOutput()
+{
+    if(!traceProcess)
+        return;
+
+    while(traceProcess->canReadLine())
+    {
+        QString line = traceProcess->readLine().trimmed();
+        if(!line.isEmpty())
+            parseTraceLine(line);
+    }
 }
 
 void LatencyDialog::onTracerouteFinished(int exitCode, QProcess::ExitStatus)
 {
     Q_UNUSED(exitCode);
 
+    // Read any remaining output
+    if(traceProcess)
+    {
+        QString remaining = traceProcess->readAllStandardOutput().trimmed();
+        QStringList lines = remaining.split('\n', Qt::SkipEmptyParts);
+        for(const QString &line : lines)
+            parseTraceLine(line.trimmed());
+    }
+
     traceBtn->setEnabled(true);
     traceBtn->setText("Run Traceroute");
 
-    if(!traceProcess)
+    if(traceProcess)
+    {
+        traceProcess->deleteLater();
+        traceProcess = nullptr;
+    }
+}
+
+void LatencyDialog::parseTraceLine(const QString &line)
+{
+    // Skip header lines
+    if(line.startsWith("traceroute") || line.startsWith("Tracing") || line.isEmpty())
         return;
 
-    QString output = traceProcess->readAllStandardOutput();
-    QStringList lines = output.split('\n', Qt::SkipEmptyParts);
+    // traceroute format: " 1  10.0.0.1  1.234 ms"  or  " 2  * * *"
+    QStringList parts = line.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+    if(parts.size() < 2)
+        return;
 
-    traceTable->setRowCount(0);
+    // First part should be the hop number
+    bool isHop;
+    parts[0].toInt(&isHop);
+    if(!isHop)
+        return;
 
-    bool isMtr = output.contains("Loss%") || output.contains("Snt");
+    int row = traceTable->rowCount();
+    traceTable->insertRow(row);
 
-    for(const QString &line : lines)
+    traceTable->setItem(row, 0, new QTableWidgetItem(parts[0])); // Hop
+
+    // Find IP address (first token with dots that isn't "ms")
+    QString ip = "*";
+    for(int i = 1; i < parts.size(); i++)
     {
-        QString trimmed = line.trimmed();
-        if(trimmed.isEmpty()) continue;
-
-        // Skip header lines
-        if(trimmed.startsWith("Start:") || trimmed.startsWith("HOST:") ||
-           trimmed.startsWith("traceroute") || trimmed.startsWith("Tracing"))
-            continue;
-
-        int row = traceTable->rowCount();
-        traceTable->insertRow(row);
-
-        if(isMtr)
+        if(parts[i].contains('.') && parts[i] != "ms" && !parts[i].endsWith("ms"))
         {
-            // MTR format: |-- IP Loss% Snt Last Avg Best Wrst StDev
-            QStringList parts = trimmed.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
-            if(parts.size() >= 8)
-            {
-                // Remove |-- prefix
-                QString hopStr = parts[0].replace("|--", "").replace(".", "");
-                traceTable->setItem(row, 0, new QTableWidgetItem(hopStr));
-                traceTable->setItem(row, 1, new QTableWidgetItem(parts[1])); // IP
-                traceTable->setItem(row, 2, new QTableWidgetItem(parts[2])); // Loss%
-                traceTable->setItem(row, 3, new QTableWidgetItem(parts[5])); // Avg
-                traceTable->setItem(row, 4, new QTableWidgetItem(QString("%1 / %2").arg(parts[6], parts[7]))); // Best/Worst
-
-                // Color code loss
-                double loss = parts[2].replace("%", "").toDouble();
-                if(loss > 0)
-                {
-                    QColor lossColor = loss > 5 ? QColor(255, 60, 60) : QColor(255, 200, 0);
-                    traceTable->item(row, 2)->setForeground(lossColor);
-                }
-            }
-        }
-        else
-        {
-            // traceroute/tracert format: HOP IP time1 time2 time3
-            QStringList parts = trimmed.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
-            if(parts.size() >= 2)
-            {
-                traceTable->setItem(row, 0, new QTableWidgetItem(parts[0])); // Hop
-
-                // Find IP address
-                QString ip = "*";
-                for(const QString &p : parts)
-                {
-                    if(p.contains('.') && !p.contains("ms"))
-                    {
-                        ip = p;
-                        break;
-                    }
-                }
-                traceTable->setItem(row, 1, new QTableWidgetItem(ip));
-                traceTable->setItem(row, 2, new QTableWidgetItem("N/A")); // Loss not available
-
-                // Parse RTT values
-                QStringList rtts;
-                for(const QString &p : parts)
-                {
-                    bool ok;
-                    double val = p.toDouble(&ok);
-                    if(ok && val > 0)
-                        rtts.append(QString::number(val, 'f', 1));
-                }
-
-                if(!rtts.isEmpty())
-                {
-                    double total = 0;
-                    double best = 99999, worst = 0;
-                    for(const QString &r : rtts)
-                    {
-                        double v = r.toDouble();
-                        total += v;
-                        if(v < best) best = v;
-                        if(v > worst) worst = v;
-                    }
-                    traceTable->setItem(row, 3, new QTableWidgetItem(QString::number(total / rtts.size(), 'f', 1)));
-                    traceTable->setItem(row, 4, new QTableWidgetItem(QString("%1 / %2").arg(
-                        QString::number(best, 'f', 1), QString::number(worst, 'f', 1))));
-                }
-                else
-                {
-                    traceTable->setItem(row, 3, new QTableWidgetItem("*"));
-                    traceTable->setItem(row, 4, new QTableWidgetItem("*"));
-                }
-            }
+            ip = parts[i];
+            break;
         }
     }
+    traceTable->setItem(row, 1, new QTableWidgetItem(ip));
+    traceTable->setItem(row, 2, new QTableWidgetItem("--")); // Loss N/A for traceroute
 
-    traceProcess->deleteLater();
-    traceProcess = nullptr;
+    // Parse RTT values (numbers before "ms")
+    QList<double> rtts;
+    for(int i = 1; i < parts.size(); i++)
+    {
+        if(parts[i] == "*") continue;
+        bool ok;
+        double val = parts[i].toDouble(&ok);
+        if(ok && val > 0 && i + 1 < parts.size() && parts[i + 1] == "ms")
+            rtts.append(val);
+    }
+
+    if(!rtts.isEmpty())
+    {
+        double total = 0, best = 99999, worst = 0;
+        for(double v : rtts)
+        {
+            total += v;
+            if(v < best) best = v;
+            if(v > worst) worst = v;
+        }
+        traceTable->setItem(row, 3, new QTableWidgetItem(QString("%1 ms").arg(
+            QString::number(total / rtts.size(), 'f', 1))));
+        traceTable->setItem(row, 4, new QTableWidgetItem(QString("%1 / %2 ms").arg(
+            QString::number(best, 'f', 1), QString::number(worst, 'f', 1))));
+
+        // Color code high latency
+        double avg = total / rtts.size();
+        QColor color = avg < 50 ? QColor(0, 200, 0) : avg < 150 ? QColor(255, 200, 0) : QColor(255, 60, 60);
+        traceTable->item(row, 3)->setForeground(color);
+    }
+    else
+    {
+        traceTable->setItem(row, 3, new QTableWidgetItem("*"));
+        traceTable->setItem(row, 4, new QTableWidgetItem("*"));
+        traceTable->item(row, 3)->setForeground(QColor(255, 60, 60));
+    }
+
+    // Auto-scroll to latest hop
+    traceTable->scrollToBottom();
 }
