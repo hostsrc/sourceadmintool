@@ -14,6 +14,7 @@
 #include "database.h"
 #include "playerhistorydialog.h"
 #include "maphistorydialog.h"
+#include "latencydialog.h"
 
 extern QMap<int, QString> appIDMap;
 extern QList<ServerInfo *> serverList;
@@ -330,6 +331,21 @@ void MainWindow::UpdateInfoTable(ServerInfo *info, bool current, QList<RulesInfo
                 this->ui->infoTable->setRowHeight(row, 50);
                 auto *pingGraph = new GraphWidget(&info->pingList, GraphWidget::PingGraph, 300, this);
                 this->ui->infoTable->setCellWidget(row, 0, pingGraph);
+                row++;
+
+                // Latency stats button
+                this->ui->infoTable->insertRow(row);
+                this->ui->infoTable->setItem(row, 0, new QTableWidgetItem("Latency Stats"));
+                auto *latBtn = new QPushButton("View Latency & Traceroute", this);
+                QString sKey = info->hostPort;
+                QString sName = info->serverNameRich;
+                sName.remove(QRegularExpression("<[^>]*>"));
+                QString sHost = info->hostPort;
+                connect(latBtn, &QPushButton::clicked, this, [this, sKey, sName, sHost]{
+                    LatencyDialog dlg(sKey, sName, sHost, this);
+                    dlg.exec();
+                });
+                this->ui->infoTable->setCellWidget(row, 1, latBtn);
                 row++;
             }
             else if(item.display == "PlayerGraph" && info->playerCountHistory.length() > 1)

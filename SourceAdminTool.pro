@@ -32,7 +32,8 @@ SOURCES += main.cpp\
     serverbrowser.cpp \
     database.cpp \
     playerhistorydialog.cpp \
-    maphistorydialog.cpp
+    maphistorydialog.cpp \
+    latencydialog.cpp
 
 HEADERS  += mainwindow.h \
     query.h \
@@ -49,7 +50,8 @@ HEADERS  += mainwindow.h \
     serverbrowser.h \
     database.h \
     playerhistorydialog.h \
-    maphistorydialog.h
+    maphistorydialog.h \
+    latencydialog.h
 
 FORMS    += mainwindow.ui
 
