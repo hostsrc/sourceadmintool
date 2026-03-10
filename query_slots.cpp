@@ -13,6 +13,7 @@
 
 #include "database.h"
 #include "playerhistorydialog.h"
+#include "maphistorydialog.h"
 
 extern QMap<int, QString> appIDMap;
 extern QList<ServerInfo *> serverList;
@@ -292,6 +293,7 @@ void MainWindow::UpdateInfoTable(ServerInfo *info, bool current, QList<RulesInfo
         items.append(InfoTableItem("Players", info->playerCount));
         items.append(InfoTableItem("PlayerGraph", ""));//Placeholder for player count graph
         items.append(InfoTableItem("Map", mapString));
+        items.append(InfoTableItem("MapHistory", ""));//Placeholder for map history button
         items.append(InfoTableItem("Timelimit", info->timelimit));
         //This line is ugly, but im way too lazy.
         if(!info->version.isEmpty())
@@ -353,6 +355,21 @@ void MainWindow::UpdateInfoTable(ServerInfo *info, bool current, QList<RulesInfo
                     dlg.exec();
                 });
                 this->ui->infoTable->setCellWidget(row, 1, histBtn);
+                row++;
+            }
+            else if(item.display == "MapHistory")
+            {
+                this->ui->infoTable->insertRow(row);
+                this->ui->infoTable->setItem(row, 0, new QTableWidgetItem("Map History"));
+                auto *mapHistBtn = new QPushButton("View Map History", this);
+                QString sKey = info->hostPort;
+                QString sName = info->serverNameRich;
+                sName.remove(QRegularExpression("<[^>]*>"));
+                connect(mapHistBtn, &QPushButton::clicked, this, [this, sKey, sName]{
+                    MapHistoryDialog dlg(sKey, sName, this);
+                    dlg.exec();
+                });
+                this->ui->infoTable->setCellWidget(row, 1, mapHistBtn);
                 row++;
             }
             else if(!item.val.isEmpty() && item.display != "PlayerGraph")
