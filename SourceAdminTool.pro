@@ -30,7 +30,8 @@ SOURCES += main.cpp\
     util.cpp \
     updatechecker.cpp \
     serverbrowser.cpp \
-    database.cpp
+    database.cpp \
+    playerhistorydialog.cpp
 
 HEADERS  += mainwindow.h \
     query.h \
@@ -45,7 +46,8 @@ HEADERS  += mainwindow.h \
     util.h \
     updatechecker.h \
     serverbrowser.h \
-    database.h
+    database.h \
+    playerhistorydialog.h
 
 FORMS    += mainwindow.ui
 

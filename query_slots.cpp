@@ -7,8 +7,12 @@
 #include "settings.h"
 
 #include <QPainter>
+#include <QPushButton>
+#include <QHBoxLayout>
+#include <QRegularExpression>
 
 #include "database.h"
+#include "playerhistorydialog.h"
 
 extern QMap<int, QString> appIDMap;
 extern QList<ServerInfo *> serverList;
@@ -334,6 +338,21 @@ void MainWindow::UpdateInfoTable(ServerInfo *info, bool current, QList<RulesInfo
                 int maxP = info->maxPlayers > 0 ? info->maxPlayers : 32;
                 auto *playerGraph = new GraphWidget(&info->playerCountHistory, GraphWidget::PlayerGraph, maxP, this);
                 this->ui->infoTable->setCellWidget(row, 0, playerGraph);
+                row++;
+
+                // Player history button
+                this->ui->infoTable->insertRow(row);
+                this->ui->infoTable->setItem(row, 0, new QTableWidgetItem("Player History"));
+                auto *histBtn = new QPushButton("View Full History", this);
+                QString sKey = info->hostPort;
+                QString sName = info->serverNameRich;
+                sName.remove(QRegularExpression("<[^>]*>"));
+                int sMaxP = maxP;
+                connect(histBtn, &QPushButton::clicked, this, [this, sKey, sName, sMaxP]{
+                    PlayerHistoryDialog dlg(sKey, sName, sMaxP, this);
+                    dlg.exec();
+                });
+                this->ui->infoTable->setCellWidget(row, 1, histBtn);
                 row++;
             }
             else if(!item.val.isEmpty() && item.display != "PlayerGraph")
