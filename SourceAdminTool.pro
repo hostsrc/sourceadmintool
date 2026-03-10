@@ -27,7 +27,9 @@ SOURCES += main.cpp\
     query_slots.cpp \
     loghandler.cpp \
     loghandler_slots.cpp \
-    util.cpp
+    util.cpp \
+    updatechecker.cpp \
+    serverbrowser.cpp
 
 HEADERS  += mainwindow.h \
     query.h \
@@ -39,7 +41,9 @@ HEADERS  += mainwindow.h \
     simplecrypt.h \
     ui_mainwindow.h \
     loghandler.h \
-    util.h
+    util.h \
+    updatechecker.h \
+    serverbrowser.h
 
 FORMS    += mainwindow.ui
 

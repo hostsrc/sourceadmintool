@@ -290,7 +290,9 @@ void MainWindow::UpdateInfoTable(ServerInfo *info, bool current, QList<RulesInfo
         //This line is ugly, but im way too lazy.
         if(!info->version.isEmpty())
         {
+            QString engineStr = info->goldsrc ? "GoldSrc" : "Source";
             items.append(InfoTableItem("Version", QString("v%1 (%2, %3, Protocol %4)").arg(info->version, info->os == "l" ? "Linux" : info->os == "m" ? "Mac" : "Windows", info->type == "d" ? "Dedicated" : "Local", QString::number(info->protocol))));
+            items.append(InfoTableItem("Engine", QString("%1 (%2)").arg(engineStr, info->goldsrc ? "0x6D" : "0x49")));
         }
 
         QString modString;
