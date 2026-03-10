@@ -49,7 +49,6 @@ jobs:
         with:
           arch: ${{ matrix.qt_arch }}
           version: '6.9.0'
-          modules: 'qtsql'
 
       - name: Configure
         if: "!startsWith(runner.os, 'Windows')"
