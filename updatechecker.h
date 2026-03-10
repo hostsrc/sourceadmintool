@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QNetworkAccessManager>
 
-#define DEFAULT_UPDATE_URL "https://api.github.com/repos/alexevladgabriel/admintool/releases?per_page=1"
+#define DEFAULT_UPDATE_URL "https://api.github.com/repos/hostsrc/sourceadmintool/releases?per_page=1"
 
 class QWidget;
 
