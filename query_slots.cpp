@@ -307,12 +307,14 @@ void MainWindow::UpdateInfoTable(ServerInfo *info, bool current, QList<RulesInfo
         items.append(InfoTableItem("Map", mapString));
         items.append(InfoTableItem("MapHistory", ""));//Placeholder for map history button
         items.append(InfoTableItem("Timelimit", info->timelimit));
-        //This line is ugly, but im way too lazy.
         if(!info->version.isEmpty())
         {
-            QString engineStr = info->goldsrc ? "GoldSrc" : "Source";
             items.append(InfoTableItem("Version", QString("v%1 (%2, %3, Protocol %4)").arg(info->version, info->os == "l" ? "Linux" : info->os == "m" ? "Mac" : "Windows", info->type == "d" ? "Dedicated" : "Local", QString::number(info->protocol))));
-            items.append(InfoTableItem("Engine", QString("%1 (%2)").arg(engineStr, info->goldsrc ? "0x6D" : "0x49")));
+        }
+        if(info->haveInfo)
+        {
+            QString engineStr = info->goldsrc ? "GoldSrc" : "Source";
+            items.append(InfoTableItem("Engine", QString("%1 (%2, Protocol %3)").arg(engineStr, info->goldsrc ? "0x6D" : "0x49", QString::number(info->protocol))));
         }
 
         QString modString;
@@ -344,19 +346,20 @@ void MainWindow::UpdateInfoTable(ServerInfo *info, bool current, QList<RulesInfo
                 this->ui->infoTable->setCellWidget(row, 0, pingGraph);
                 row++;
 
-                // Latency stats button
+                // Latency stats link
                 this->ui->infoTable->insertRow(row);
-                this->ui->infoTable->setItem(row, 0, new QTableWidgetItem("Latency Stats"));
-                auto *latBtn = new QPushButton("View Latency & Traceroute", this);
+                this->ui->infoTable->setItem(row, 0, new QTableWidgetItem("Latency"));
+                auto *latLink = new QLabel("<a href='#' style='color: #4a9eff;'>Latency & Traceroute</a>", this);
+                latLink->setCursor(Qt::PointingHandCursor);
                 QString sKey = info->hostPort;
                 QString sName = info->serverNameRich;
                 sName.remove(QRegularExpression("<[^>]*>"));
                 QString sHost = info->hostPort;
-                connect(latBtn, &QPushButton::clicked, this, [this, sKey, sName, sHost]{
+                connect(latLink, &QLabel::linkActivated, this, [this, sKey, sName, sHost]{
                     LatencyDialog dlg(sKey, sName, sHost, this);
                     dlg.exec();
                 });
-                this->ui->infoTable->setCellWidget(row, 1, latBtn);
+                this->ui->infoTable->setCellWidget(row, 1, latLink);
                 row++;
             }
             else if(item.display == "PlayerGraph" && info->playerCountHistory.length() > 1)
@@ -369,34 +372,36 @@ void MainWindow::UpdateInfoTable(ServerInfo *info, bool current, QList<RulesInfo
                 this->ui->infoTable->setCellWidget(row, 0, playerGraph);
                 row++;
 
-                // Player history button
+                // Player history link
                 this->ui->infoTable->insertRow(row);
-                this->ui->infoTable->setItem(row, 0, new QTableWidgetItem("Player History"));
-                auto *histBtn = new QPushButton("View Full History", this);
+                this->ui->infoTable->setItem(row, 0, new QTableWidgetItem("History"));
+                auto *histLink = new QLabel("<a href='#' style='color: #4a9eff;'>Player History (24h/7D/30D)</a>", this);
+                histLink->setCursor(Qt::PointingHandCursor);
                 QString sKey = info->hostPort;
                 QString sName = info->serverNameRich;
                 sName.remove(QRegularExpression("<[^>]*>"));
                 int sMaxP = maxP;
-                connect(histBtn, &QPushButton::clicked, this, [this, sKey, sName, sMaxP]{
+                connect(histLink, &QLabel::linkActivated, this, [this, sKey, sName, sMaxP]{
                     PlayerHistoryDialog dlg(sKey, sName, sMaxP, this);
                     dlg.exec();
                 });
-                this->ui->infoTable->setCellWidget(row, 1, histBtn);
+                this->ui->infoTable->setCellWidget(row, 1, histLink);
                 row++;
             }
             else if(item.display == "MapHistory")
             {
                 this->ui->infoTable->insertRow(row);
-                this->ui->infoTable->setItem(row, 0, new QTableWidgetItem("Map History"));
-                auto *mapHistBtn = new QPushButton("View Map History", this);
+                this->ui->infoTable->setItem(row, 0, new QTableWidgetItem("Maps"));
+                auto *mapLink = new QLabel("<a href='#' style='color: #4a9eff;'>Map History</a>", this);
+                mapLink->setCursor(Qt::PointingHandCursor);
                 QString sKey = info->hostPort;
                 QString sName = info->serverNameRich;
                 sName.remove(QRegularExpression("<[^>]*>"));
-                connect(mapHistBtn, &QPushButton::clicked, this, [this, sKey, sName]{
+                connect(mapLink, &QLabel::linkActivated, this, [this, sKey, sName]{
                     MapHistoryDialog dlg(sKey, sName, this);
                     dlg.exec();
                 });
-                this->ui->infoTable->setCellWidget(row, 1, mapHistBtn);
+                this->ui->infoTable->setCellWidget(row, 1, mapLink);
                 row++;
             }
             else if(!item.val.isEmpty() && item.display != "PlayerGraph")
