@@ -9,7 +9,12 @@ QString BuildPath(const char *file)
 #ifdef WIN32
     return QString("./%1").arg(file);
 #elif defined(__APPLE__)
-    return QString("%1/../Resources/%2").arg(QCoreApplication::applicationDirPath(), file);
+    // Check Contents/Resources/ first (macdeployqt layout)
+    QString resourcePath = QString("%1/../Resources/%2").arg(QCoreApplication::applicationDirPath(), file);
+    if(QFile::exists(resourcePath))
+        return resourcePath;
+    // Fallback: next to binary in Contents/MacOS/ (qmake bundle layout)
+    return QString("%1/%2").arg(QCoreApplication::applicationDirPath(), file);
 #else
     return QString("%1/%2").arg(QCoreApplication::applicationDirPath(), file);
 #endif
