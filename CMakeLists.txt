@@ -36,7 +36,7 @@ configure_file(
     @ONLY
 )
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Widgets Sql)
 
 set(SOURCES
     main.cpp
@@ -57,6 +57,11 @@ set(SOURCES
     util.cpp
     updatechecker.cpp
     serverbrowser.cpp
+    database.cpp
+    playerhistorydialog.cpp
+    maphistorydialog.cpp
+    latencydialog.cpp
+    pingcheck.cpp
 )
 
 set(HEADERS
@@ -72,6 +77,11 @@ set(HEADERS
     util.h
     updatechecker.h
     serverbrowser.h
+    database.h
+    playerhistorydialog.h
+    maphistorydialog.h
+    latencydialog.h
+    pingcheck.h
 )
 
 set(FORMS mainwindow.ui)
@@ -141,6 +151,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Gui
     Qt6::Network
     Qt6::Widgets
+    Qt6::Sql
     ${UPNPC_LIBRARY}
     ${MMDB_LIBRARY}
 )

@@ -49,6 +49,7 @@ jobs:
         with:
           arch: ${{ matrix.qt_arch }}
           version: '6.9.0'
+          modules: 'qtsql'
 
       - name: Configure
         if: "!startsWith(runner.os, 'Windows')"
@@ -68,7 +69,8 @@ jobs:
           mkdir -p package/lib/{platforms,xcbglintegrations}
           cp build/SourceAdminTool package
           cp GeoLite2-Country.mmdb app_list_map.ini commands.xml qt.conf package
-          cp $QT_ROOT_DIR/lib/{libQt6Widgets.so.6,libQt6Gui.so.6,libQt6Network.so.6,libQt6Core.so.6,libQt6XcbQpa.so.6,libQt6DBus.so.6,libQt6OpenGL.so.6} package/lib || true
+          cp $QT_ROOT_DIR/lib/{libQt6Widgets.so.6,libQt6Gui.so.6,libQt6Network.so.6,libQt6Core.so.6,libQt6Sql.so.6,libQt6XcbQpa.so.6,libQt6DBus.so.6,libQt6OpenGL.so.6} package/lib || true
+          cp -r $QT_ROOT_DIR/plugins/sqldrivers package/lib || true
           cp $QT_ROOT_DIR/plugins/platforms/libqxcb.so package/lib/platforms || true
           cp $QT_ROOT_DIR/plugins/xcbglintegrations/*.so package/lib/xcbglintegrations || true
           cp -r $QT_ROOT_DIR/plugins/imageformats package/lib || true
