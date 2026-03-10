@@ -351,12 +351,27 @@ void LatencyDialog::updateStats(const QList<LatencyRecord> &records)
     statsLabel->setText(stats);
 }
 
+LatencyDialog::~LatencyDialog()
+{
+    if(traceProcess)
+    {
+        traceProcess->disconnect();
+        traceProcess->kill();
+        traceProcess->waitForFinished(1000);
+        delete traceProcess;
+        traceProcess = nullptr;
+    }
+}
+
 void LatencyDialog::runTraceroute()
 {
     if(traceProcess)
     {
+        traceProcess->disconnect();
         traceProcess->kill();
-        traceProcess->deleteLater();
+        traceProcess->waitForFinished(1000);
+        delete traceProcess;
+        traceProcess = nullptr;
     }
 
     traceBtn->setEnabled(false);
@@ -375,15 +390,8 @@ void LatencyDialog::runTraceroute()
 #ifdef Q_OS_WIN
     traceProcess->start("tracert", {"-d", "-w", "2000", ip});
 #else
-    // Try mtr first (more detailed), fallback to traceroute
-    if(QProcess::execute("which", {"mtr"}) == 0)
-    {
-        traceProcess->start("mtr", {"--report", "--report-cycles", "5", "--no-dns", ip});
-    }
-    else
-    {
-        traceProcess->start("traceroute", {"-n", "-w", "2", "-q", "3", ip});
-    }
+    // Use traceroute (always available on macOS/Linux)
+    traceProcess->start("traceroute", {"-n", "-w", "2", "-q", "3", ip});
 #endif
 }
 

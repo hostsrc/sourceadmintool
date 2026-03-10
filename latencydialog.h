@@ -35,6 +35,7 @@ class LatencyDialog : public QDialog
 public:
     LatencyDialog(const QString &serverKey, const QString &serverName,
                   const QString &hostAddress, QWidget *parent = nullptr);
+    ~LatencyDialog();
 
 private slots:
     void onRange24h();
