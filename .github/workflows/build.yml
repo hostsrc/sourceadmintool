@@ -3,7 +3,7 @@ on:
   push:
   pull_request:
     branches:
-     - master
+     - main
   workflow_dispatch:
   schedule:
     - cron: '53 05 01 * *'
@@ -92,14 +92,14 @@ jobs:
           Compress-Archive -Path package\* -DestinationPath SAT-win.zip
 
       - name: Upload artifact (release archives)
-        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
           name: SAT-${{ matrix.os_short }}
           path: SAT-*.*
 
       - name: Upload artifact (CI)
-        if: github.ref != 'refs/heads/master' || github.event_name != 'push'
+        if: github.ref != 'refs/heads/main' || github.event_name != 'push'
         uses: actions/upload-artifact@v4
         with:
           name: SAT-${{ matrix.os_short }}-${{ github.sha }}
@@ -107,7 +107,7 @@ jobs:
 
   release:
     needs: build
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
