@@ -8,6 +8,7 @@
 #include <QLabel>
 #include <QDateTime>
 #include <QLinearGradient>
+#include <QApplication>
 
 // --- HistoryGraphWidget ---
 
@@ -38,33 +39,42 @@ void HistoryGraphWidget::paintEvent(QPaintEvent *)
 
     int w = width();
     int h = height();
-    int margin = 40;
-    int graphW = w - margin * 2;
-    int graphH = h - margin * 2;
+    int leftMargin = 45;
+    int rightMargin = 15;
+    int topMargin = 15;
+    int bottomMargin = 30;
+    int graphW = w - leftMargin - rightMargin;
+    int graphH = h - topMargin - bottomMargin;
+
+    // Theme-aware colors from palette
+    QPalette pal = qApp->palette();
+    QColor bgColor = pal.color(QPalette::Base);
+    QColor gridColor = pal.color(QPalette::Mid);
+    QColor labelColor = pal.color(QPalette::Text);
+    gridColor.setAlpha(60);
 
     if(dataRecords.isEmpty() || graphW <= 0 || graphH <= 0)
     {
-        painter.setPen(Qt::gray);
+        painter.setPen(pal.color(QPalette::PlaceholderText));
         painter.drawText(rect(), Qt::AlignCenter, "No data available for this time range");
         return;
     }
 
     // Background
-    painter.fillRect(QRect(margin, margin, graphW, graphH), QColor(30, 30, 34));
+    painter.fillRect(QRect(leftMargin, topMargin, graphW, graphH), bgColor);
 
-    // Draw grid lines
-    painter.setPen(QPen(QColor(60, 60, 65), 1));
+    // Draw grid lines and Y-axis labels
+    painter.setPen(QPen(gridColor, 1));
     int gridLines = 4;
     for(int i = 0; i <= gridLines; i++)
     {
-        int y = margin + (graphH * i / gridLines);
-        painter.drawLine(margin, y, margin + graphW, y);
+        int y = topMargin + (graphH * i / gridLines);
+        painter.drawLine(leftMargin, y, leftMargin + graphW, y);
 
-        // Y-axis labels
         int val = maxVal - (maxVal * i / gridLines);
-        painter.setPen(Qt::gray);
-        painter.drawText(0, y - 8, margin - 5, 16, Qt::AlignRight | Qt::AlignVCenter, QString::number(val));
-        painter.setPen(QPen(QColor(60, 60, 65), 1));
+        painter.setPen(labelColor);
+        painter.drawText(0, y - 8, leftMargin - 8, 16, Qt::AlignRight | Qt::AlignVCenter, QString::number(val));
+        painter.setPen(QPen(gridColor, 1));
     }
 
     // Time range for X-axis labels
@@ -73,12 +83,12 @@ void HistoryGraphWidget::paintEvent(QPaintEvent *)
     qint64 timeSpan = endTime - startTime;
 
     // Draw X-axis time labels
-    painter.setPen(Qt::gray);
+    painter.setPen(labelColor);
     int numLabels = qMin(6, graphW / 80);
     for(int i = 0; i <= numLabels; i++)
     {
         qint64 t = startTime + (timeSpan * i / numLabels);
-        int x = margin + (graphW * i / numLabels);
+        int x = leftMargin + (graphW * i / numLabels);
 
         QString label;
         if(currentRange == Range24h)
@@ -86,11 +96,11 @@ void HistoryGraphWidget::paintEvent(QPaintEvent *)
         else
             label = QDateTime::fromSecsSinceEpoch(t).toString("MM/dd HH:mm");
 
-        painter.drawText(x - 30, h - margin + 5, 60, 20, Qt::AlignHCenter | Qt::AlignTop, label);
+        painter.drawText(x - 35, topMargin + graphH + 4, 70, 20, Qt::AlignHCenter | Qt::AlignTop, label);
     }
 
     // Draw the filled area graph
-    QLinearGradient gradient(0, margin, 0, margin + graphH);
+    QLinearGradient gradient(0, topMargin, 0, topMargin + graphH);
     gradient.setColorAt(0.0, QColor(0, 150, 255, 180));
     gradient.setColorAt(1.0, QColor(0, 150, 255, 30));
 
@@ -102,8 +112,8 @@ void HistoryGraphWidget::paintEvent(QPaintEvent *)
         float xRatio = (timeSpan > 0) ? (float)(dataRecords[i].timestamp - startTime) / timeSpan : 0;
         float yRatio = (float)dataRecords[i].playerCount / maxVal;
 
-        float x = margin + xRatio * graphW;
-        float y = margin + graphH - (yRatio * graphH);
+        float x = leftMargin + xRatio * graphW;
+        float y = topMargin + graphH - (yRatio * graphH);
 
         linePoly.append(QPointF(x, y));
     }
@@ -112,8 +122,8 @@ void HistoryGraphWidget::paintEvent(QPaintEvent *)
     if(!linePoly.isEmpty())
     {
         fillPoly = linePoly;
-        fillPoly.append(QPointF(margin + graphW, margin + graphH));
-        fillPoly.append(QPointF(margin, margin + graphH));
+        fillPoly.append(QPointF(leftMargin + graphW, topMargin + graphH));
+        fillPoly.append(QPointF(leftMargin, topMargin + graphH));
 
         painter.setPen(Qt::NoPen);
         painter.setBrush(gradient);
@@ -125,25 +135,31 @@ void HistoryGraphWidget::paintEvent(QPaintEvent *)
         painter.drawPolyline(linePoly);
     }
 
-    // Draw crosshair on hover
+    // Crosshair with horizontal line
+    QColor crossColor = labelColor;
+    crossColor.setAlpha(80);
     QPoint mousePos = mapFromGlobal(QCursor::pos());
-    if(rect().contains(mousePos) && mousePos.x() >= margin && mousePos.x() <= margin + graphW)
+    if(rect().contains(mousePos) && mousePos.x() >= leftMargin && mousePos.x() <= leftMargin + graphW
+       && mousePos.y() >= topMargin && mousePos.y() <= topMargin + graphH)
     {
-        painter.setPen(QPen(QColor(255, 255, 255, 120), 1, Qt::DashLine));
-        painter.drawLine(mousePos.x(), margin, mousePos.x(), margin + graphH);
+        painter.setPen(QPen(crossColor, 1, Qt::DashLine));
+        painter.drawLine(mousePos.x(), topMargin, mousePos.x(), topMargin + graphH);
+        painter.drawLine(leftMargin, mousePos.y(), leftMargin + graphW, mousePos.y());
     }
 
     // Border
-    painter.setPen(QPen(QColor(80, 80, 85), 1));
+    QColor borderColor = pal.color(QPalette::Mid);
+    painter.setPen(QPen(borderColor, 1));
     painter.setBrush(Qt::NoBrush);
-    painter.drawRect(margin, margin, graphW, graphH);
+    painter.drawRect(leftMargin, topMargin, graphW, graphH);
 }
 
 void HistoryGraphWidget::mouseMoveEvent(QMouseEvent *event)
 {
-    int margin = 40;
-    int graphW = width() - margin * 2;
-    int x = event->position().toPoint().x() - margin;
+    int leftMargin = 45;
+    int rightMargin = 15;
+    int graphW = width() - leftMargin - rightMargin;
+    int x = event->position().toPoint().x() - leftMargin;
 
     if(dataRecords.isEmpty() || graphW <= 0 || x < 0 || x > graphW)
     {
@@ -196,20 +212,42 @@ PlayerHistoryDialog::PlayerHistoryDialog(const QString &serverKey, const QString
 {
     setWindowTitle(QString("Player History - %1").arg(serverName));
     setMinimumSize(700, 400);
-    resize(800, 450);
+    resize(850, 500);
 
     QVBoxLayout *layout = new QVBoxLayout(this);
+    layout->setSpacing(8);
 
-    // Time range buttons
+    // Stats summary
+    statsLabel = new QLabel(this);
+    statsLabel->setTextFormat(Qt::RichText);
+    QPalette pal = qApp->palette();
+    QColor statsBg = pal.color(QPalette::Base);
+    QColor statsBorder = pal.color(QPalette::Mid);
+    statsLabel->setStyleSheet(
+        QString("QLabel { background: %1; border: 1px solid %2; border-radius: 4px; padding: 8px 12px; }")
+        .arg(statsBg.name(), statsBorder.name()));
+    layout->addWidget(statsLabel);
+
+    // Time range buttons - compact toggle style
     QHBoxLayout *btnLayout = new QHBoxLayout();
-    btn24h = new QPushButton("24 Hours", this);
-    btn7D = new QPushButton("7 Days", this);
-    btn30D = new QPushButton("30 Days", this);
+    btn24h = new QPushButton("24h", this);
+    btn7D = new QPushButton("7D", this);
+    btn30D = new QPushButton("30D", this);
 
     btn24h->setCheckable(true);
     btn7D->setCheckable(true);
     btn30D->setCheckable(true);
     btn24h->setChecked(true);
+    btn24h->setFixedWidth(60);
+    btn7D->setFixedWidth(60);
+    btn30D->setFixedWidth(60);
+
+    QString toggleStyle =
+        "QPushButton { border: 1px solid palette(mid); border-radius: 3px; padding: 4px 8px; }"
+        "QPushButton:checked { background: #3a6fcc; border-color: #5a8fec; color: white; }";
+    btn24h->setStyleSheet(toggleStyle);
+    btn7D->setStyleSheet(toggleStyle);
+    btn30D->setStyleSheet(toggleStyle);
 
     btnLayout->addStretch();
     btnLayout->addWidget(btn24h);
@@ -221,6 +259,7 @@ PlayerHistoryDialog::PlayerHistoryDialog(const QString &serverKey, const QString
 
     // Graph
     graphWidget = new HistoryGraphWidget(this);
+    graphWidget->setMinimumHeight(220);
     layout->addWidget(graphWidget, 1);
 
     connect(btn24h, &QPushButton::clicked, this, &PlayerHistoryDialog::onRange24h);
@@ -276,4 +315,51 @@ void PlayerHistoryDialog::loadData(HistoryGraphWidget::TimeRange range)
     QList<PlayerCountRecord> records = Database::instance()->getPlayerCounts(serverKey, startTime, now);
     graphWidget->setTimeRange(range);
     graphWidget->setData(records, maxPlayers);
+    updateStats(records);
+}
+
+void PlayerHistoryDialog::updateStats(const QList<PlayerCountRecord> &records)
+{
+    if(records.isEmpty())
+    {
+        statsLabel->setText("No player data available");
+        return;
+    }
+
+    int minPlayers = INT_MAX, maxPlayers = 0;
+    qint64 total = 0;
+
+    for(const auto &r : records)
+    {
+        if(r.playerCount < minPlayers) minPlayers = r.playerCount;
+        if(r.playerCount > maxPlayers) maxPlayers = r.playerCount;
+        total += r.playerCount;
+    }
+
+    int avg = total / records.size();
+
+    // Find peak time
+    int peakIdx = 0;
+    for(int i = 1; i < records.size(); i++)
+    {
+        if(records[i].playerCount > records[peakIdx].playerCount)
+            peakIdx = i;
+    }
+    QString peakTime = QDateTime::fromSecsSinceEpoch(records[peakIdx].timestamp).toString("MM/dd HH:mm");
+
+    QString stats = QString(
+        "<table cellspacing='8'><tr>"
+        "<td><b>Min:</b> %1</td>"
+        "<td><b>Max:</b> <span style='color:#0096ff'>%2</span></td>"
+        "<td><b>Avg:</b> %3</td>"
+        "<td><b>Peak at:</b> %4</td>"
+        "<td><b>Samples:</b> %5</td>"
+        "</tr></table>")
+        .arg(minPlayers == INT_MAX ? 0 : minPlayers)
+        .arg(maxPlayers)
+        .arg(avg)
+        .arg(peakTime)
+        .arg(records.size());
+
+    statsLabel->setText(stats);
 }

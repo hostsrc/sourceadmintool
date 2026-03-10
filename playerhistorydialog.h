@@ -4,6 +4,7 @@
 #include <QDialog>
 #include <QWidget>
 #include <QPushButton>
+#include <QLabel>
 #include <QList>
 #include "database.h"
 
@@ -40,10 +41,12 @@ private slots:
 
 private:
     void loadData(HistoryGraphWidget::TimeRange range);
+    void updateStats(const QList<PlayerCountRecord> &records);
 
     QString serverKey;
     int maxPlayers;
     HistoryGraphWidget *graphWidget;
+    QLabel *statsLabel;
     QPushButton *btn24h;
     QPushButton *btn7D;
     QPushButton *btn30D;

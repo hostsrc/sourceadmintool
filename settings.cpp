@@ -12,6 +12,7 @@
 #include <QFile>
 #include <QXmlStreamReader>
 #include <QRandomGenerator>
+#include <QProcess>
 
 extern int g_queryMaxRetries;
 
@@ -142,7 +143,31 @@ void Settings::ReadSettings()
 
     pMain->GetUi()->rulesTable->horizontalHeader()->restoreState(pSettings->value("rulesTableState", pMain->GetUi()->rulesTable->horizontalHeader()->saveState()).toByteArray());
 
-    bool darkTheme = pSettings->value("darkTheme", false).toBool();
+    // Theme: "system" (default), "dark", or "light"
+    QString themeMode = pSettings->value("themeMode", "system").toString();
+
+    // Migrate old darkTheme bool to new themeMode
+    if(!pSettings->contains("themeMode") && pSettings->contains("darkTheme"))
+    {
+        themeMode = pSettings->value("darkTheme").toBool() ? "dark" : "light";
+        pSettings->setValue("themeMode", themeMode);
+    }
+
+    bool darkTheme;
+    if(themeMode == "system")
+    {
+        darkTheme = false;
+#ifdef Q_OS_MAC
+        QProcess proc;
+        proc.start("defaults", {"read", "-g", "AppleInterfaceStyle"});
+        proc.waitForFinished(500);
+        darkTheme = proc.readAllStandardOutput().trimmed().toLower() == "dark";
+#endif
+    }
+    else
+    {
+        darkTheme = (themeMode == "dark");
+    }
 
     if(pSettings->value("showRCONpass", false).toBool())
     {
@@ -255,6 +280,9 @@ void Settings::SaveSettings()
 
     pSettings->setValue("playerTableState", pMain->GetUi()->playerTable->horizontalHeader()->saveState());
 
+    // Save theme: if user toggled, save explicit choice; keep "system" otherwise
+    if(pSettings->value("themeMode", "system").toString() != "system")
+        pSettings->setValue("themeMode", pMain->GetUi()->menuSettings->actions().at(0)->isChecked() ? "dark" : "light");
     pSettings->setValue("darkTheme", pMain->GetUi()->menuSettings->actions().at(0)->isChecked());
 
     pSettings->setValue("showLoggingInfo", pMain->showLoggingInfo);

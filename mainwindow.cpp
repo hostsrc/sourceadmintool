@@ -404,5 +404,6 @@ QColor MainWindow::GetGroupColor(const QString &group)
 
     uint hash = qHash(group);
     int hue = hash % 360;
-    return QColor::fromHsl(hue, 100, 160);
+    // Saturation 160/255 (~63%), Lightness 140/255 (~55%) for vivid, readable colors
+    return QColor::fromHsl(hue, 160, 140);
 }

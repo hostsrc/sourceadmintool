@@ -12,8 +12,8 @@ int main(int argc, char *argv[])
 
     defaultPalette = a.palette();
 
-    defaultPalette.setColor(QPalette::Link,Qt::black);
-    defaultPalette.setColor(QPalette::LinkVisited, Qt::black);
+    defaultPalette.setColor(QPalette::Link, QColor(0, 100, 200));
+    defaultPalette.setColor(QPalette::LinkVisited, QColor(0, 80, 160));
 
     a.setPalette(defaultPalette);
 

@@ -9,6 +9,7 @@
 #include <QDateTime>
 #include <QLinearGradient>
 #include <QGroupBox>
+#include <QApplication>
 #include <cmath>
 
 // --- LatencyGraphWidget ---
@@ -39,13 +40,23 @@ void LatencyGraphWidget::paintEvent(QPaintEvent *)
 
     int w = width();
     int h = height();
-    int margin = 40;
-    int graphW = w - margin * 2;
-    int graphH = h - margin * 2;
+    int leftMargin = 55;
+    int rightMargin = 15;
+    int topMargin = 15;
+    int bottomMargin = 30;
+    int graphW = w - leftMargin - rightMargin;
+    int graphH = h - topMargin - bottomMargin;
+
+    // Theme-aware colors from palette
+    QPalette pal = qApp->palette();
+    QColor bgColor = pal.color(QPalette::Base);
+    QColor gridColor = pal.color(QPalette::Mid);
+    QColor labelColor = pal.color(QPalette::Text);
+    gridColor.setAlpha(60);
 
     if(dataRecords.isEmpty() || graphW <= 0 || graphH <= 0)
     {
-        painter.setPen(Qt::gray);
+        painter.setPen(pal.color(QPalette::PlaceholderText));
         painter.drawText(rect(), Qt::AlignCenter, "No latency data for this time range");
         return;
     }
@@ -59,21 +70,31 @@ void LatencyGraphWidget::paintEvent(QPaintEvent *)
     }
     maxPing = qMin(maxPing + 20, 500); // cap at 500ms for display
 
-    // Background
-    painter.fillRect(QRect(margin, margin, graphW, graphH), QColor(30, 30, 34));
+    // Round maxPing to a nice number for Y-axis
+    int niceMax;
+    if(maxPing <= 50) niceMax = 50;
+    else if(maxPing <= 100) niceMax = 100;
+    else if(maxPing <= 200) niceMax = 200;
+    else if(maxPing <= 300) niceMax = 300;
+    else niceMax = 500;
+    maxPing = niceMax;
 
-    // Grid lines
-    painter.setPen(QPen(QColor(60, 60, 65), 1));
+    // Background
+    painter.fillRect(QRect(leftMargin, topMargin, graphW, graphH), bgColor);
+
+    // Grid lines and Y-axis labels
+    painter.setPen(QPen(gridColor, 1));
     int gridLines = 4;
     for(int i = 0; i <= gridLines; i++)
     {
-        int y = margin + (graphH * i / gridLines);
-        painter.drawLine(margin, y, margin + graphW, y);
+        int y = topMargin + (graphH * i / gridLines);
+        painter.drawLine(leftMargin, y, leftMargin + graphW, y);
 
         int val = maxPing - (maxPing * i / gridLines);
-        painter.setPen(Qt::gray);
-        painter.drawText(0, y - 8, margin - 5, 16, Qt::AlignRight | Qt::AlignVCenter, QString("%1ms").arg(val));
-        painter.setPen(QPen(QColor(60, 60, 65), 1));
+        painter.setPen(labelColor);
+        painter.drawText(0, y - 8, leftMargin - 8, 16, Qt::AlignRight | Qt::AlignVCenter,
+                         QString("%1 ms").arg(val));
+        painter.setPen(QPen(gridColor, 1));
     }
 
     // X-axis labels
@@ -81,12 +102,12 @@ void LatencyGraphWidget::paintEvent(QPaintEvent *)
     qint64 endTime = dataRecords.last().timestamp;
     qint64 timeSpan = endTime - startTime;
 
-    painter.setPen(Qt::gray);
+    painter.setPen(labelColor);
     int numLabels = qMin(6, graphW / 80);
     for(int i = 0; i <= numLabels; i++)
     {
         qint64 t = startTime + (timeSpan * i / numLabels);
-        int x = margin + (graphW * i / numLabels);
+        int x = leftMargin + (graphW * i / numLabels);
 
         QString label;
         if(currentRange == Range24h)
@@ -94,10 +115,10 @@ void LatencyGraphWidget::paintEvent(QPaintEvent *)
         else
             label = QDateTime::fromSecsSinceEpoch(t).toString("MM/dd HH:mm");
 
-        painter.drawText(x - 30, h - margin + 5, 60, 20, Qt::AlignHCenter | Qt::AlignTop, label);
+        painter.drawText(x - 35, topMargin + graphH + 4, 70, 20, Qt::AlignHCenter | Qt::AlignTop, label);
     }
 
-    // Draw latency line with color coding
+    // Draw filled area under the line
     for(int i = 1; i < dataRecords.size(); i++)
     {
         float x1Ratio = (timeSpan > 0) ? (float)(dataRecords[i-1].timestamp - startTime) / timeSpan : 0;
@@ -109,10 +130,11 @@ void LatencyGraphWidget::paintEvent(QPaintEvent *)
         float y1Ratio = (float)ping1 / maxPing;
         float y2Ratio = (float)ping2 / maxPing;
 
-        float x1 = margin + x1Ratio * graphW;
-        float x2 = margin + x2Ratio * graphW;
-        float y1 = margin + graphH - (y1Ratio * graphH);
-        float y2 = margin + graphH - (y2Ratio * graphH);
+        float x1 = leftMargin + x1Ratio * graphW;
+        float x2 = leftMargin + x2Ratio * graphW;
+        float y1 = topMargin + graphH - (y1Ratio * graphH);
+        float y2 = topMargin + graphH - (y2Ratio * graphH);
+        float yBase = topMargin + graphH;
 
         // Color based on latency: green < 50ms, yellow 50-150ms, red > 150ms
         QColor lineColor;
@@ -124,33 +146,49 @@ void LatencyGraphWidget::paintEvent(QPaintEvent *)
         else
             lineColor = QColor(255, 60, 60);
 
-        // Highlight spikes (>2x average)
         if(dataRecords[i].pingMs == 2000)
             lineColor = QColor(255, 0, 0);
 
+        // Semi-transparent fill under the line
+        QColor fillColor = lineColor;
+        fillColor.setAlpha(40);
+        QPolygonF fill;
+        fill << QPointF(x1, yBase) << QPointF(x1, y1) << QPointF(x2, y2) << QPointF(x2, yBase);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(fillColor);
+        painter.drawPolygon(fill);
+
+        // Draw the line itself
+        painter.setBrush(Qt::NoBrush);
         painter.setPen(QPen(lineColor, 2));
         painter.drawLine(QPointF(x1, y1), QPointF(x2, y2));
     }
 
-    // Crosshair
+    // Crosshair with horizontal line
+    QColor crossColor = labelColor;
+    crossColor.setAlpha(80);
     QPoint mousePos = mapFromGlobal(QCursor::pos());
-    if(rect().contains(mousePos) && mousePos.x() >= margin && mousePos.x() <= margin + graphW)
+    if(rect().contains(mousePos) && mousePos.x() >= leftMargin && mousePos.x() <= leftMargin + graphW
+       && mousePos.y() >= topMargin && mousePos.y() <= topMargin + graphH)
     {
-        painter.setPen(QPen(QColor(255, 255, 255, 120), 1, Qt::DashLine));
-        painter.drawLine(mousePos.x(), margin, mousePos.x(), margin + graphH);
+        painter.setPen(QPen(crossColor, 1, Qt::DashLine));
+        painter.drawLine(mousePos.x(), topMargin, mousePos.x(), topMargin + graphH);
+        painter.drawLine(leftMargin, mousePos.y(), leftMargin + graphW, mousePos.y());
     }
 
     // Border
-    painter.setPen(QPen(QColor(80, 80, 85), 1));
+    QColor borderColor = pal.color(QPalette::Mid);
+    painter.setPen(QPen(borderColor, 1));
     painter.setBrush(Qt::NoBrush);
-    painter.drawRect(margin, margin, graphW, graphH);
+    painter.drawRect(leftMargin, topMargin, graphW, graphH);
 }
 
 void LatencyGraphWidget::mouseMoveEvent(QMouseEvent *event)
 {
-    int margin = 40;
-    int graphW = width() - margin * 2;
-    int x = event->position().toPoint().x() - margin;
+    int leftMargin = 55;
+    int rightMargin = 15;
+    int graphW = width() - leftMargin - rightMargin;
+    int x = event->position().toPoint().x() - leftMargin;
 
     if(dataRecords.isEmpty() || graphW <= 0 || x < 0 || x > graphW)
     {
@@ -192,24 +230,41 @@ LatencyDialog::LatencyDialog(const QString &serverKey, const QString &serverName
 {
     setWindowTitle(QString("Latency Stats - %1").arg(serverName));
     setMinimumSize(750, 550);
-    resize(800, 600);
+    resize(850, 650);
 
     QVBoxLayout *layout = new QVBoxLayout(this);
+    layout->setSpacing(8);
 
-    // Stats summary
+    // Stats summary in a styled frame
     statsLabel = new QLabel(this);
     statsLabel->setTextFormat(Qt::RichText);
+    QPalette pal = qApp->palette();
+    QColor statsBg = pal.color(QPalette::Base);
+    QColor statsBorder = pal.color(QPalette::Mid);
+    statsLabel->setStyleSheet(
+        QString("QLabel { background: %1; border: 1px solid %2; border-radius: 4px; padding: 8px 12px; }")
+        .arg(statsBg.name(), statsBorder.name()));
     layout->addWidget(statsLabel);
 
-    // Time range buttons
+    // Time range buttons - compact toggle style
     QHBoxLayout *btnLayout = new QHBoxLayout();
-    btn24h = new QPushButton("24 Hours", this);
-    btn7D = new QPushButton("7 Days", this);
-    btn30D = new QPushButton("30 Days", this);
+    btn24h = new QPushButton("24h", this);
+    btn7D = new QPushButton("7D", this);
+    btn30D = new QPushButton("30D", this);
     btn24h->setCheckable(true);
     btn7D->setCheckable(true);
     btn30D->setCheckable(true);
     btn24h->setChecked(true);
+    btn24h->setFixedWidth(60);
+    btn7D->setFixedWidth(60);
+    btn30D->setFixedWidth(60);
+
+    QString toggleStyle =
+        "QPushButton { border: 1px solid palette(mid); border-radius: 3px; padding: 4px 8px; }"
+        "QPushButton:checked { background: #3a6fcc; border-color: #5a8fec; color: white; }";
+    btn24h->setStyleSheet(toggleStyle);
+    btn7D->setStyleSheet(toggleStyle);
+    btn30D->setStyleSheet(toggleStyle);
 
     btnLayout->addStretch();
     btnLayout->addWidget(btn24h);
@@ -220,26 +275,34 @@ LatencyDialog::LatencyDialog(const QString &serverKey, const QString &serverName
 
     // Latency graph
     graphWidget = new LatencyGraphWidget(this);
+    graphWidget->setMinimumHeight(220);
     layout->addWidget(graphWidget, 1);
 
     // Traceroute section
-    QGroupBox *traceGroup = new QGroupBox("Traceroute / MTR", this);
+    QGroupBox *traceGroup = new QGroupBox("Traceroute", this);
     QVBoxLayout *traceLayout = new QVBoxLayout(traceGroup);
+    traceLayout->setSpacing(6);
 
     QHBoxLayout *traceBtnLayout = new QHBoxLayout();
     traceBtn = new QPushButton("Run Traceroute", this);
+    traceBtn->setFixedWidth(140);
     traceBtnLayout->addWidget(traceBtn);
     traceBtnLayout->addStretch();
     traceLayout->addLayout(traceBtnLayout);
 
     traceTable = new QTableWidget(this);
     traceTable->setColumnCount(5);
-    traceTable->setHorizontalHeaderLabels({"Hop", "IP Address", "Loss %", "Avg (ms)", "Best/Worst (ms)"});
+    traceTable->setHorizontalHeaderLabels({"Hop", "IP Address", "Loss %", "Avg (ms)", "Best / Worst (ms)"});
+    traceTable->verticalHeader()->setVisible(false); // Hide row numbers
     traceTable->horizontalHeader()->setStretchLastSection(true);
+    traceTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    traceTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+    traceTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    traceTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
     traceTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     traceTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     traceTable->setAlternatingRowColors(true);
-    traceTable->setMaximumHeight(200);
+    traceTable->setMaximumHeight(220);
     traceLayout->addWidget(traceTable);
 
     layout->addWidget(traceGroup);
@@ -336,17 +399,29 @@ void LatencyDialog::updateStats(const QList<LatencyRecord> &records)
 
     double lossPercent = records.size() > 0 ? (double)timeoutCount / records.size() * 100.0 : 0;
 
+    // Color-code the avg ping
+    QString avgColor = avgPing < 50 ? "#00c800" : avgPing < 150 ? "#ffc800" : "#ff3c3c";
+    QString lossColor = lossPercent < 1.0 ? "#00c800" : lossPercent < 5.0 ? "#ffc800" : "#ff3c3c";
+
     QString stats = QString(
-        "<b>Min:</b> %1ms &nbsp; <b>Max:</b> %2ms &nbsp; <b>Avg:</b> %3ms &nbsp; "
-        "<b>Jitter:</b> %4ms &nbsp; <b>Loss:</b> %5% &nbsp; "
-        "<b>Spikes:</b> %6 &nbsp; <b>Samples:</b> %7")
+        "<table cellspacing='8'><tr>"
+        "<td><b>Min:</b> %1 ms</td>"
+        "<td><b>Max:</b> %2 ms</td>"
+        "<td><b>Avg:</b> <span style='color:%8'>%3 ms</span></td>"
+        "<td><b>Jitter:</b> %4 ms</td>"
+        "<td><b>Loss:</b> <span style='color:%9'>%5%</span></td>"
+        "<td><b>Spikes:</b> %6</td>"
+        "<td><b>Samples:</b> %7</td>"
+        "</tr></table>")
         .arg(minPing == INT_MAX ? 0 : minPing)
         .arg(maxPing)
         .arg(avgPing)
         .arg(QString::number(jitter, 'f', 1))
         .arg(QString::number(lossPercent, 'f', 1))
         .arg(spikeCount)
-        .arg(records.size());
+        .arg(records.size())
+        .arg(avgColor)
+        .arg(lossColor);
 
     statsLabel->setText(stats);
 }

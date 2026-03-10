@@ -496,6 +496,10 @@ void MainWindow::browserTableItemSelected()
 
 void MainWindow::darkThemeTriggered()
 {
+    // When user manually toggles (not during startup load), save explicit preference
+    if(settings && this->isVisible())
+        settings->pSettings->setValue("themeMode", this->ui->actionDark_Theme->isChecked() ? "dark" : "light");
+
     if(this->ui->actionDark_Theme->isChecked())
     {
         QPalette palette;
