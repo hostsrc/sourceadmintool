@@ -76,6 +76,7 @@ public:
     qint32 appId;
     QString serverNameRich;
     QString currentMap;
+    QString previousMap;
     QString nextMap;
     QString ff;
     QString timelimit;

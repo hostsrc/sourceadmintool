@@ -4,6 +4,7 @@
 #include "settings.h"
 #include "updatechecker.h"
 #include "serverbrowser.h"
+#include "database.h"
 #include <QKeyEvent>
 #include <QTimer>
 #include <QHBoxLayout>
@@ -60,6 +61,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     this->SetRconEnabled(false);
     m_updateChecker = new UpdateChecker(this);
+    Database::instance()->open();
+
     settings = new Settings(this);
     settings->SetDefaultSettings();
     settings->ReadSettings();
@@ -98,6 +101,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+    Database::instance()->close();
     delete settings;
     serverList.clear();
     delete ui;

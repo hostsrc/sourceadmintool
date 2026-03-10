@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui network
+QT       += core gui network sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -29,7 +29,8 @@ SOURCES += main.cpp\
     loghandler_slots.cpp \
     util.cpp \
     updatechecker.cpp \
-    serverbrowser.cpp
+    serverbrowser.cpp \
+    database.cpp
 
 HEADERS  += mainwindow.h \
     query.h \
@@ -43,7 +44,8 @@ HEADERS  += mainwindow.h \
     loghandler.h \
     util.h \
     updatechecker.h \
-    serverbrowser.h
+    serverbrowser.h \
+    database.h
 
 FORMS    += mainwindow.ui
 

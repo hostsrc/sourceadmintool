@@ -8,6 +8,8 @@
 
 #include <QPainter>
 
+#include "database.h"
+
 extern QMap<int, QString> appIDMap;
 extern QList<ServerInfo *> serverList;
 
@@ -392,6 +394,10 @@ void MainWindow::ServerInfoReady(InfoReply *reply, ServerTableIndexItem *indexCe
 
         info->pingList.append(TimestampedValue(reply->ping));
 
+        // Record latency to database
+        Database::instance()->insertLatencySample(info->hostPort,
+            QDateTime::currentSecsSinceEpoch(), reply->ping);
+
         quint64 totalPing = 0;
         quint16 totalPings = 0;
 
@@ -439,6 +445,24 @@ void MainWindow::ServerInfoReady(InfoReply *reply, ServerTableIndexItem *indexCe
         while(info->playerCountHistory.length() >= 1000)
             info->playerCountHistory.removeFirst();
         info->playerCountHistory.append(TimestampedValue(reply->players));
+
+        // Record player count to database
+        Database::instance()->insertPlayerCount(info->hostPort,
+            QDateTime::currentSecsSinceEpoch(), reply->players, reply->maxplayers);
+
+        // Detect map changes
+        if(!info->previousMap.isEmpty() && info->previousMap != reply->map)
+        {
+            Database::instance()->insertMapChange(info->hostPort,
+                QDateTime::currentSecsSinceEpoch(), reply->map);
+        }
+        else if(info->previousMap.isEmpty() && !reply->map.isEmpty())
+        {
+            // First time seeing this server, record initial map
+            Database::instance()->insertMapChange(info->hostPort,
+                QDateTime::currentSecsSinceEpoch(), reply->map);
+        }
+        info->previousMap = reply->map;
 
         if (!info->countryFlag.isNull())
         {
