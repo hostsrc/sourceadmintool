@@ -48,7 +48,7 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           arch: ${{ matrix.qt_arch }}
-          version: '6.9.0'
+          version: '6.9.3'
 
       - name: Configure
         if: "!startsWith(runner.os, 'Windows')"
