@@ -32,7 +32,7 @@ endif()
 # Generate version header from project version
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/version.h.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/version.h"
+    "${CMAKE_CURRENT_BINARY_DIR}/generated_version.h"
     @ONLY
 )
 
@@ -93,6 +93,8 @@ qt_add_executable(${PROJECT_NAME}
     ${FORMS}
     ${RESOURCES}
 )
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE SOURCEADMINTOOL_GENERATED_VERSION)
 
 # Find third-party libraries
 # On macOS, always use bundled static libs to avoid Homebrew dynamic lib crashes

@@ -11,6 +11,7 @@
 #include <QLabel>
 #include <QStatusBar>
 #include <QRegularExpression>
+#include <memory>
 
 extern Settings *settings;
 extern QList<ServerInfo *> serverList;
@@ -63,6 +64,8 @@ MainWindow::MainWindow(QWidget *parent) :
     m_updateChecker = new UpdateChecker(this);
     Database::instance()->open();
 
+    infoQueryPool.setMaxThreadCount(8);
+
     settings = new Settings(this);
     settings->SetDefaultSettings();
     settings->ReadSettings();
@@ -101,6 +104,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+    infoQueryPool.waitForDone();
     Database::instance()->close();
     delete settings;
     serverList.clear();
@@ -108,6 +112,17 @@ MainWindow::~MainWindow()
     delete pLogHandler;
     delete sayIter;
     delete commandIter;
+}
+
+void MainWindow::QueueInfoQuery(QHostAddress host, quint16 port, ServerTableIndexItem *item)
+{
+    item->GetServerInfo()->queryState = QueryRunning;
+    infoQueryPool.start([this, host, port, item]() {
+        std::shared_ptr<InfoReply> reply(GetInfoReply(host, port));
+        QMetaObject::invokeMethod(this, [this, reply, item]() {
+            ServerInfoReady(reply.get(), item);
+        }, Qt::QueuedConnection);
+    });
 }
 
 AddServerError MainWindow::CheckServerList(QString server)
@@ -192,8 +207,7 @@ ServerInfo *MainWindow::AddServerToList(QString server, AddServerError *pError)
 
     if(isIP)
     {
-        InfoQuery *infoQuery = new InfoQuery(this);
-        infoQuery->query(&info->host, info->port, id);
+        QueueInfoQuery(info->host, info->port, id);
     }
     else
     {

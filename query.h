@@ -77,20 +77,6 @@ public:
    QString value;
 };
 
-class InfoQuery : public QObject
-{
-    Q_OBJECT
-    QThread workerThread;
-public:
-    InfoQuery(MainWindow *main);
-    ~InfoQuery() {
-        workerThread.quit();
-        workerThread.wait();
-    }
-signals:
-    void query(QHostAddress *, quint16, ServerTableIndexItem *item);
-};
-
 class PlayerQuery : public QObject
 {
     Q_OBJECT
@@ -127,4 +113,3 @@ QList<RulesInfo> *GetRulesReply(QHostAddress, quint16, bool goldsrcSplits = fals
 QString SecondsToDisplayTime(float time);
 QString GetStringFromStream(QDataStream &stream);
 #endif // INFOQUERY
-

@@ -3,6 +3,7 @@
 
 #include <QDebug>
 #include <QMainWindow>
+#include <QThreadPool>
 #include <QSplitter>
 #include <QStringList>
 #include <QHostAddress>
@@ -116,6 +117,7 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     AddServerError CheckServerList(QString server);
     ServerInfo *AddServerToList(QString server, AddServerError *error = nullptr);
+    void QueueInfoQuery(QHostAddress host, quint16 port, ServerTableIndexItem *item);
     void UpdateSelectedItemInfo(bool removeFirst = true, bool updateRules = false);
     void CreateTableItemOrUpdate(size_t row, size_t col, QTableWidget *table, ServerInfo *info);
     ServerTableIndexItem *GetServerTableIndexItem(size_t row);
@@ -137,7 +139,7 @@ protected:
     bool eventFilter(QObject *object, QEvent *event);
 
 public slots:
-    void ServerInfoReady(InfoReply *, ServerTableIndexItem *);
+    void ServerInfoReady(const InfoReply *, ServerTableIndexItem *);
     void PlayerInfoReady(QList<PlayerInfo> *, ServerTableIndexItem *);
     void RulesInfoReady(QList<RulesInfo> *, ServerTableIndexItem *);
     void RconAuthReady(ServerInfo *info, QList<QueuedCommand>queuedcmds);
@@ -177,6 +179,7 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    QThreadPool infoQueryPool;
     QTimer *updateTimer;
     void ConnectSlots();
     void UpdateInfoTable(ServerInfo *info, bool current = true, QList<RulesInfo> *list = nullptr);

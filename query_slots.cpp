@@ -40,11 +40,8 @@ void MainWindow::TimedUpdate()
             if(info->queryState == QueryResolveFailed || info->queryState == QueryResolving || info->queryState == QueryRunning)
                 continue;
 
-            InfoQuery *infoQuery = new InfoQuery(this);
-
             info->cleanHashTable();
-
-            infoQuery->query(&info->host, info->port, id);
+            QueueInfoQuery(info->host, info->port, id);
         }
         if(run % 60 == 0)
         {
@@ -426,7 +423,7 @@ void MainWindow::UpdateInfoTable(ServerInfo *info, bool current, QList<RulesInfo
 }
 
 //QUERY INFO READY
-void MainWindow::ServerInfoReady(InfoReply *reply, ServerTableIndexItem *indexCell)
+void MainWindow::ServerInfoReady(const InfoReply *reply, ServerTableIndexItem *indexCell)
 {
     QTableWidget *browserTable = this->ui->browserTable;
 
@@ -444,8 +441,6 @@ void MainWindow::ServerInfoReady(InfoReply *reply, ServerTableIndexItem *indexCe
 
     if(row == -1)
     {
-        if(reply)
-            delete reply;
         return;
     }
 
@@ -564,7 +559,6 @@ void MainWindow::ServerInfoReady(InfoReply *reply, ServerTableIndexItem *indexCe
         this->CreateTableItemOrUpdate(row, kBrowserColMap, browserTable, info);
         this->CreateTableItemOrUpdate(row, kBrowserColPlayerCount, browserTable, info);
 
-        delete reply;
     }
     else
     {
@@ -576,8 +570,6 @@ void MainWindow::ServerInfoReady(InfoReply *reply, ServerTableIndexItem *indexCe
         connect(pingCheck, &PingCheck::finished, this, &MainWindow::HostReachabilityReady);
         pingCheck->check(info->hostPort, indexCell);
 
-        if(reply)
-            delete reply;
     }
     this->UpdateInfoTable(info, (row == this->ui->browserTable->currentRow()));
     this->ApplyBrowserFilter();

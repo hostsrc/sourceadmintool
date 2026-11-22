@@ -120,11 +120,13 @@ void UpdateChecker::onReplyFinished(QNetworkReply *reply)
 
     // For same version (dev builds), compare commit hashes
     bool isDifferentCommit = false;
-    if(!isNewer && !targetCommit.isEmpty())
+    if(!isNewer && remoteVersion == APP_VERSION_STRING &&
+       QRegularExpression("^[0-9a-fA-F]{40}$").match(targetCommit).hasMatch())
     {
         QString localCommit = APP_COMMIT_HASH_FULL;
-        // target_commitish is the full SHA; compare with our full hash
-        if(localCommit != "unknown" && targetCommit != localCommit)
+        // Only compare commits when the build has a real full Git SHA.
+        if(QRegularExpression("^[0-9a-fA-F]{40}$").match(localCommit).hasMatch() &&
+           targetCommit.compare(localCommit, Qt::CaseInsensitive) != 0)
             isDifferentCommit = true;
     }
 

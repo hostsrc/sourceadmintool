@@ -3,13 +3,6 @@
 #include "serverinfo.h"
 #include <QString>
 
-void Worker::getServerInfo(QHostAddress *host, quint16 port, ServerTableIndexItem *item)
-{
-    InfoReply *reply = GetInfoReply(*host, port);
-    emit serverInfoReady(reply, item);
-    this->currentThread()->quit();
-}
-
 void Worker::getPlayerInfo(QHostAddress *host, quint16 port, ServerTableIndexItem *item)
 {
     bool goldsrcSplits = item->GetServerInfo()->goldsrc;

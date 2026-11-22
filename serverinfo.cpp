@@ -126,8 +126,7 @@ void HostQueryResult::HostInfoResolved(QHostInfo hostInfo)
 
             this->info->GetCountryFlag();
 
-            InfoQuery *infoQuery = new InfoQuery(this->mainWindow);
-            infoQuery->query(& this->info->host,  this->info->port, this->id);
+            this->mainWindow->QueueInfoQuery(this->info->host, this->info->port, this->id);
             this->deleteLater();
             return;
         }

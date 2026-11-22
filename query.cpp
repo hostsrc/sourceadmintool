@@ -501,18 +501,6 @@ InfoReply::InfoReply(QByteArray response, qint64 ping)
     }
 }
 
-InfoQuery::InfoQuery(MainWindow *main)
-{
-    Worker *worker = new Worker;
-    worker->moveToThread(&workerThread);
-    connect(&workerThread, &QThread::finished, worker, &Worker::deleteLater);
-    connect(&workerThread, &QThread::finished, this, &InfoQuery::deleteLater);
-    connect(this, &InfoQuery::query, worker, &Worker::getServerInfo);
-    connect(worker, &Worker::serverInfoReady, main, &MainWindow::ServerInfoReady);
-
-    workerThread.start();
-}
-
 InfoReply *GetInfoReply(QHostAddress host, quint16 port)
 {
     QByteArray query;
